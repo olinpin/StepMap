@@ -6,10 +6,14 @@
 //
 
 import SwiftUI
-import CoreData
+import MapKit
 
 struct ContentView: View {
     
+    @ObservedObject var viewModel = ViewModel()
+    
+    @State private var position = MapCameraPosition.automatic
+    @State private var showSearch: Bool = true
     // TODO: create a map
     // Add navigation to the map
     // Display the calculated distance and how long will it take by walking
@@ -19,17 +23,19 @@ struct ContentView: View {
     // show how long does the route take with said walking speed
 
     var body: some View {
-        NavigationView {
-            List {
-                Text("HER")
-            }
-            .toolbar {
-                ToolbarItem(placement: .navigationBarTrailing) {
-                    Text("Edit")
-                }
-            }
-            Text("Select an item")
-        }
+        Map(position: $position)
+//            .ignoresSafeArea()
+            .sheet(isPresented: $showSearch, content: {
+                SearchView()
+            })
+//        Text("This is what's set: \(viewModel.test)")
+//        Button(action: {
+//            save(value: "te5t3")
+//        }, label: {Text("CLICK ME")})
+    }
+    
+    func save(value: String) {
+        viewModel.saveValue(value)
     }
 }
 #Preview {
