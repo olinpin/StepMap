@@ -74,10 +74,10 @@ struct SearchItemView: View {
 
     func findDirections() {
         let directionsRequest = MKDirections.Request()
-        //        directionsRequest.source = MKMapItem.forCurrentLocation()
-        directionsRequest.source = MKMapItem.init(
-            placemark: MKPlacemark(
-                coordinate: CLLocationCoordinate2D(latitude: 52.3676, longitude: 4.9041)))
+        directionsRequest.source = MKMapItem.forCurrentLocation()
+        //        directionsRequest.source = MKMapItem.init(
+        //            placemark: MKPlacemark(
+        //                coordinate: CLLocationCoordinate2D(latitude: 52.3676, longitude: 4.9041)))
         directionsRequest.destination = location
         directionsRequest.transportType = .walking
         directionsRequest.requestsAlternateRoutes = false  // TODO: make alternative routes available

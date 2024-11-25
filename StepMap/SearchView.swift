@@ -12,7 +12,8 @@ struct SearchView: View {
     @State private var query: String = "airport"
     @State private var locations: [MKMapItem] = []
     @Binding var directions: [MKRoute]
-    
+    var locationManager: LocationManager
+
     var body: some View {
         VStack {
             HStack {
@@ -37,38 +38,16 @@ struct SearchView: View {
         }
         .padding()
         .interactiveDismissDisabled()
-        
+
         .presentationDetents([.height(200), .large])
         .presentationBackground(.regularMaterial)
         .presentationBackgroundInteraction(.enabled(upThrough: .large))
     }
-    
-    func findDirections(to place: MKMapItem) {
-        let directionsRequest = MKDirections.Request()
-        //        directionsRequest.source = MKMapItem.forCurrentLocation()
-        directionsRequest.source = MKMapItem.init(
-            placemark: MKPlacemark(
-                coordinate: CLLocationCoordinate2D(latitude: 52.3676, longitude: 4.9041)))
-        directionsRequest.destination = place
-        directionsRequest.transportType = .walking
-        directionsRequest.requestsAlternateRoutes = false  // TODO: make alternative routes available
-        directionsRequest.departureDate = .now
-        
-        let searchDirections = MKDirections(request: directionsRequest)
-        searchDirections.calculate { (response, error) in
-            guard let response = response else {
-                print(error ?? "")
-                print("Error while searching for directions")
-                return
-            }
-            self.directions = response.routes
-        }
-    }
-    
+
     func search(for text: String) {
         let searchRequest = MKLocalSearch.Request()
         searchRequest.naturalLanguageQuery = text
-        
+
         let search = MKLocalSearch(request: searchRequest)
         search.start { (response, error) in
             guard let response = response else {
@@ -78,7 +57,7 @@ struct SearchView: View {
             var items: [MKMapItem] = []
             for item in response.mapItems {
                 if let name = item.name,
-                   let location = item.placemark.location
+                    let location = item.placemark.location
                 {
                     print(
                         "\(name): \(location.coordinate.latitude),\(location.coordinate.longitude)")

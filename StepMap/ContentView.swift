@@ -5,11 +5,13 @@
 //  Created by Oliver Hnát on 23.11.2024.
 //
 
+import CoreLocation
 import MapKit
 import SwiftUI
 
 struct ContentView: View {
     @ObservedObject var viewModel = ViewModel()
+    @StateObject var locationManager = LocationManager()
 
     @State private var position = MapCameraPosition.automatic
     @State private var showSearch: Bool = true
@@ -25,17 +27,37 @@ struct ContentView: View {
 
     var body: some View {
         Map(position: $position) {
-                ForEach(0..<directions.count) { i in
-                    MapPolyline(directions[i].polyline)
-                        .stroke(Constants.routeColor[i], lineWidth: Constants.routeWidth)
+            ForEach(0..<directions.count) { i in
+                MapPolyline(directions[i].polyline)
+                    .stroke(Constants.routeColor[i], lineWidth: Constants.routeWidth)
             }
         }
         .sheet(
             isPresented: $showSearch,
             content: {
-                SearchView(directions: $directions)
+                SearchView(directions: $directions, locationManager: locationManager)
                     .ignoresSafeArea()
-            })
+            }
+        )
+        .mapControls {
+            MapUserLocationButton()
+                .onTapGesture {
+                    locationManager.requestAuthorization()
+                    locationManager.requestLocation()
+                    if let userLocation = locationManager.location {
+                        position = .camera(
+                            MapCamera(centerCoordinate: userLocation, distance: 1000))
+                    }
+                }
+        }
+        .onAppear {
+            locationManager.requestAuthorization()
+            locationManager.requestLocation()
+            if let userLocation = locationManager.location {
+                position = .camera(MapCamera(centerCoordinate: userLocation, distance: 1000))
+            }
+
+        }
         //        Text("This is what's set: \(viewModel.test)")
         //        Button(action: {
         //            save(value: "te5t3")
