@@ -1,6 +1,6 @@
 # StepMap
 ## TODO:
-- [ ] Create a map
+- [x] Create a map
 - [ ] Add navigation to the map
 - [ ] Display the calculated distance and how long will it take by walking
 - [ ] Get walkingStepLength from HealthKit
