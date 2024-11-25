@@ -25,16 +25,16 @@ struct ContentView: View {
 
     var body: some View {
         Map(position: $position) {
-            ForEach(0..<directions.count) { i in
-                MapPolyline(directions[i].polyline)
-                    .stroke(Constants.routeColor[i], lineWidth: Constants.routeWidth)
+                ForEach(0..<directions.count) { i in
+                    MapPolyline(directions[i].polyline)
+                        .stroke(Constants.routeColor[i], lineWidth: Constants.routeWidth)
             }
         }
-        //            .ignoresSafeArea()
         .sheet(
             isPresented: $showSearch,
             content: {
                 SearchView(directions: $directions)
+                    .ignoresSafeArea()
             })
         //        Text("This is what's set: \(viewModel.test)")
         //        Button(action: {

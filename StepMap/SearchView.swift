@@ -9,10 +9,10 @@ import MapKit
 import SwiftUI
 
 struct SearchView: View {
-    @State private var query: String = ""
+    @State private var query: String = "airport"
     @State private var locations: [MKMapItem] = []
     @Binding var directions: [MKRoute]
-
+    
     var body: some View {
         VStack {
             HStack {
@@ -22,27 +22,27 @@ struct SearchView: View {
                     .onChange(of: self.query) {
                         search(for: self.query)
                     }
+                    .onAppear {
+                        // TODO: delete this, it's for debug only
+                        search(for: self.query)
+                    }
             }
             .modifier(TextFieldGrayBackgroudColor())
             Spacer()
-            List(self.locations, id: \.identifier) { location in
-                Button(
-                    action: {
-                        self.findDirections(to: location)
-                    },
-                    label: {
-                        SearchItemView(location: location)
-                    })
+            ScrollView {
+                ForEach(self.locations, id: \.identifier) { location in
+                    SearchItemView(location: location, directions: $directions)
+                }
             }
         }
         .padding()
         .interactiveDismissDisabled()
-
+        
         .presentationDetents([.height(200), .large])
         .presentationBackground(.regularMaterial)
         .presentationBackgroundInteraction(.enabled(upThrough: .large))
     }
-
+    
     func findDirections(to place: MKMapItem) {
         let directionsRequest = MKDirections.Request()
         //        directionsRequest.source = MKMapItem.forCurrentLocation()
@@ -53,22 +53,22 @@ struct SearchView: View {
         directionsRequest.transportType = .walking
         directionsRequest.requestsAlternateRoutes = false  // TODO: make alternative routes available
         directionsRequest.departureDate = .now
-
+        
         let searchDirections = MKDirections(request: directionsRequest)
         searchDirections.calculate { (response, error) in
             guard let response = response else {
-                print(error)
+                print(error ?? "")
                 print("Error while searching for directions")
                 return
             }
             self.directions = response.routes
         }
     }
-
+    
     func search(for text: String) {
         let searchRequest = MKLocalSearch.Request()
         searchRequest.naturalLanguageQuery = text
-
+        
         let search = MKLocalSearch(request: searchRequest)
         search.start { (response, error) in
             guard let response = response else {
@@ -78,7 +78,7 @@ struct SearchView: View {
             var items: [MKMapItem] = []
             for item in response.mapItems {
                 if let name = item.name,
-                    let location = item.placemark.location
+                   let location = item.placemark.location
                 {
                     print(
                         "\(name): \(location.coordinate.latitude),\(location.coordinate.longitude)")
@@ -100,7 +100,8 @@ struct TextFieldGrayBackgroudColor: ViewModifier {
     }
 }
 
-#Preview {
-    @Previewable @State var directions: [MKRoute] = []
-    return SearchView(directions: $directions)
-}
+//#Preview {
+//    @Previewable @State var directions: [MKRoute] = []
+//    @Previewable @State var displayRoute: Bool = false
+//    return SearchView(directions: $directions, $disp)
+//}
