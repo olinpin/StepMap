@@ -11,6 +11,7 @@ import SwiftUI
 struct SearchView: View {
     @State private var query: String = ""
     @State private var locations: [MKMapItem] = []
+    @Binding var directions: [MKRoute]
 
     var body: some View {
         VStack {
@@ -60,9 +61,7 @@ struct SearchView: View {
                 print("Error while searching for directions")
                 return
             }
-            for route in response.routes {
-                // extract route(s)
-            }
+            self.directions = response.routes
         }
     }
 
@@ -102,5 +101,6 @@ struct TextFieldGrayBackgroudColor: ViewModifier {
 }
 
 #Preview {
-    SearchView()
+    @Previewable @State var directions: [MKRoute] = []
+    return SearchView(directions: $directions)
 }
