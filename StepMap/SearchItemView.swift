@@ -110,6 +110,4 @@ struct SearchItemView: View {
             self.distance = response.routes.first?.distance
         }
     }
-
-    //    let address = location.placemark.title
 }

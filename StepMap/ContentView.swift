@@ -28,10 +28,9 @@ struct ContentView: View {
     // add "cancel" button that will hide the route
     // add ability to hold on the map to place a mark (end goal)
     // Display the calculated distance and how long will it take by walking
-    // Get walkingStepLength from HealthKit
-    // Show how many steps does the route take
     // Get walkingSpeed
     // show how long does the route take with said walking speed
+    // Add favorite locations - like home, work, etc (probably should be stored in core data tho:/)
 
     var body: some View {
         Map(position: $position) {
