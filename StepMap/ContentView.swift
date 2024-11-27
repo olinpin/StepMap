@@ -19,6 +19,9 @@ struct ContentView: View {
 
     // TODO: create a map
     // Add navigation to the map
+    // after you click the navigation button, show the start and end place on the map with a tag or whatever it's called
+    // add "cancel" button that will hide the route
+    // add ability to hold on the map to place a mark (end goal)
     // Display the calculated distance and how long will it take by walking
     // Get walkingStepLength from HealthKit
     // Show how many steps does the route take

@@ -21,11 +21,25 @@ struct SearchView: View {
                 TextField("Search for any location", text: $query)
                     .autocorrectionDisabled()
                     .onChange(of: self.query) {
-                        search(for: self.query)
+                        if query.count > 0 {
+                            search(for: self.query)
+                        } else {
+                            self.locations = []
+                        }
                     }
                     .onAppear {
                         // TODO: delete this, it's for debug only
                         search(for: self.query)
+                    }
+                    .overlay {
+                        HStack{
+                            Spacer()
+                            Image(systemName: "multiply.circle.fill")
+                                .foregroundStyle(.gray)
+                                .onTapGesture {
+                                    query = ""
+                                }
+                        }
                     }
             }
             .modifier(TextFieldGrayBackgroudColor())
