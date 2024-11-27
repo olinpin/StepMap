@@ -32,6 +32,10 @@ struct ContentView: View {
     // show how long does the route take with said walking speed
     // Add favorite locations - like home, work, etc (probably should be stored in core data tho:/)
 
+    
+    // How to speed up?
+    // calculate only the distance between the start and end instead of getting directions for everything
+    // if user clicks on the place, display better view and then calculate route there
     var body: some View {
         Map(position: $position) {
             ForEach(0..<directions.count) { i in

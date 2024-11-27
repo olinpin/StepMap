@@ -70,9 +70,9 @@ struct SearchItemView: View {
             }
         )
         .frame(height: 100)
-        .onAppear {
-            findDirections()
-        }
+//        .onAppear {
+//            findDirections()
+//        }
     }
 
     func formatDistance(distance: CLLocationDistance) -> String {
