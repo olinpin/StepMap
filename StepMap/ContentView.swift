@@ -6,20 +6,25 @@
 //
 
 import CoreLocation
+import HealthKitUI
 import MapKit
 import SwiftUI
 
 struct ContentView: View {
     @ObservedObject var viewModel = ViewModel()
     @StateObject var locationManager = LocationManager()
+    @StateObject var healthKitManager = HealthKitManager()
 
     @State private var position = MapCameraPosition.automatic
     @State private var showSearch: Bool = true
     @State private var directions: [MKRoute] = []
+    @State var healthKitAccess = false
+    @State var stepLength: Double?
 
     // TODO: create a map
     // Add navigation to the map
     // after you click the navigation button, show the start and end place on the map with a tag or whatever it's called
+    // FIX: calling the directions too many times, wait till user is finished typing
     // add "cancel" button that will hide the route
     // add ability to hold on the map to place a mark (end goal)
     // Display the calculated distance and how long will it take by walking
@@ -38,11 +43,15 @@ struct ContentView: View {
         .sheet(
             isPresented: $showSearch,
             content: {
-                SearchView(directions: $directions, locationManager: locationManager)
-                    .ignoresSafeArea()
+                SearchView(
+                    directions: $directions, stepLength: $stepLength,
+                    locationManager: locationManager
+                )
+                .ignoresSafeArea()
             }
         )
         .mapControls {
+            // TODO: make sure the user location stays on the map even if camera moves
             MapUserLocationButton()
                 .onTapGesture {
                     locationManager.requestAuthorization()
@@ -59,12 +68,11 @@ struct ContentView: View {
             if let userLocation = locationManager.location {
                 position = .camera(MapCamera(centerCoordinate: userLocation, distance: 1000))
             }
-
+            Task {
+                await healthKitManager.requestAccess()
+                stepLength = await healthKitManager.getStepLength()
+            }
         }
-        //        Text("This is what's set: \(viewModel.test)")
-        //        Button(action: {
-        //            save(value: "te5t3")
-        //        }, label: {Text("CLICK ME")})
     }
 
     func save(value: String) {

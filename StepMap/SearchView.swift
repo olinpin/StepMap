@@ -9,9 +9,11 @@ import MapKit
 import SwiftUI
 
 struct SearchView: View {
-    @State private var query: String = "airport"
+    @State private var query: String = ""
     @State private var locations: [MKMapItem] = []
     @Binding var directions: [MKRoute]
+    @Binding var stepLength: Double?
+    @State var showSteps = true
     var locationManager: LocationManager
 
     var body: some View {
@@ -27,12 +29,12 @@ struct SearchView: View {
                             self.locations = []
                         }
                     }
-                    .onAppear {
-                        // TODO: delete this, it's for debug only
-                        search(for: self.query)
-                    }
+                    //                    .onAppear {
+                    //                        // TODO: delete this, it's for debug only
+                    //                        search(for: self.query)
+                    //                    }
                     .overlay {
-                        HStack{
+                        HStack {
                             Spacer()
                             Image(systemName: "multiply.circle.fill")
                                 .foregroundStyle(.gray)
@@ -46,7 +48,9 @@ struct SearchView: View {
             Spacer()
             ScrollView {
                 ForEach(self.locations, id: \.identifier) { location in
-                    SearchItemView(location: location, directions: $directions)
+                    SearchItemView(
+                        location: location, directions: $directions, stepLength: $stepLength,
+                        showSteps: $showSteps)
                 }
             }
         }
@@ -65,7 +69,7 @@ struct SearchView: View {
         let search = MKLocalSearch(request: searchRequest)
         search.start { (response, error) in
             guard let response = response else {
-                print("ERROR")
+                print(error)
                 return
             }
             var items: [MKMapItem] = []
@@ -73,8 +77,6 @@ struct SearchView: View {
                 if let name = item.name,
                     let location = item.placemark.location
                 {
-                    print(
-                        "\(name): \(location.coordinate.latitude),\(location.coordinate.longitude)")
                     items.append(item)
                 }
             }

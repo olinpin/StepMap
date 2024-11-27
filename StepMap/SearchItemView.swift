@@ -5,6 +5,8 @@
 //  Created by Oliver Hnát on 23.11.2024.
 //
 
+import HealthKit
+import HealthKitUI
 import MapKit
 import SwiftUI
 
@@ -12,6 +14,8 @@ struct SearchItemView: View {
     var location: MKMapItem
     @State var distance: CLLocationDistance?
     @Binding var directions: [MKRoute]
+    @Binding var stepLength: Double?
+    @Binding var showSteps: Bool
     @State var localDirections: [MKRoute] = []
 
     var body: some View {
@@ -54,7 +58,11 @@ struct SearchItemView: View {
                             }
                         }
                         if distance != nil {
-                            Text("\(formatDistance(distance: distance!))")
+                            Button {
+                                self.showSteps.toggle()
+                            } label: {
+                                Text("\(formatDistance(distance: distance!))")
+                            }
                         }
                     }
                     Spacer()
@@ -68,6 +76,15 @@ struct SearchItemView: View {
     }
 
     func formatDistance(distance: CLLocationDistance) -> String {
+        let steps = distance * (stepLength ?? 0)
+        if steps != 0 && showSteps {
+            let formatter = NumberFormatter()
+            formatter.maximumFractionDigits = 0
+            formatter.numberStyle = .decimal
+            let number = NSNumber(value: steps)
+            return formatter.string(from: number)! + " steps"
+            //            return String(format: "%.0f", steps)
+        }
         let distanceFormatter = MKDistanceFormatter()
         return distanceFormatter.string(fromDistance: distance)
     }
@@ -75,9 +92,9 @@ struct SearchItemView: View {
     func findDirections() {
         let directionsRequest = MKDirections.Request()
         directionsRequest.source = MKMapItem.forCurrentLocation()
-        //        directionsRequest.source = MKMapItem.init(
-        //            placemark: MKPlacemark(
-        //                coordinate: CLLocationCoordinate2D(latitude: 52.3676, longitude: 4.9041)))
+        //                directionsRequest.source = MKMapItem.init(
+        //                    placemark: MKPlacemark(
+        //                        coordinate: CLLocationCoordinate2D(latitude: 52.3676, longitude: 4.9041)))
         directionsRequest.destination = location
         directionsRequest.transportType = .walking
         directionsRequest.requestsAlternateRoutes = false  // TODO: make alternative routes available
@@ -86,8 +103,7 @@ struct SearchItemView: View {
         let searchDirections = MKDirections(request: directionsRequest)
         searchDirections.calculate { (response, error) in
             guard let response = response else {
-                print(error ?? "")
-                print("Error while searching for directions")
+                print("Error while searching for directions: \(error?.localizedDescription ?? "")")
                 return
             }
             self.localDirections = response.routes
