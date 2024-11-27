@@ -37,7 +37,7 @@ struct ContentView: View {
         Map(position: $position) {
             ForEach(0..<directions.count) { i in
                 MapPolyline(directions[i].polyline)
-                    .stroke(Constants.routeColor[i], lineWidth: Constants.routeWidth)
+                    .stroke(Defaults.routeColor[i], lineWidth: Defaults.routeWidth)
             }
         }
         .sheet(
@@ -61,6 +61,7 @@ struct ContentView: View {
                             MapCamera(centerCoordinate: userLocation, distance: 1000))
                     }
                 }
+            MapCompass()
         }
         .onAppear {
             locationManager.requestAuthorization()
@@ -78,14 +79,6 @@ struct ContentView: View {
     func save(value: String) {
         viewModel.saveValue(value)
     }
-}
-enum Constants {
-    static let routeColor: [Color] = [
-        .blue,
-        .red,
-        .yellow,
-    ]
-    static let routeWidth: CGFloat = 8
 }
 #Preview {
     ContentView()

@@ -39,8 +39,8 @@ struct SearchItemView: View {
                             .foregroundStyle(.white)
                             .font(.title)
                         }
-                        .foregroundStyle(.green)
-                    //            Spacer()
+                        .foregroundStyle(
+                            Defaults.getColorFor(pointOfInterest: location.pointOfInterestCategory))
                     HStack {
                         VStack {
                             HStack {
@@ -108,91 +108,6 @@ struct SearchItemView: View {
             }
             self.localDirections = response.routes
             self.distance = response.routes.first?.distance
-        }
-    }
-
-    struct Defaults {
-        static let pointOfInterestIcons: [MKPointOfInterestCategory: String] = [
-            .museum: "building.columns.fill",
-            .musicVenue: "music.note.house.fill",
-            .theater: "theatermasks.fill",
-            .library: "books.vertical.fill",
-            .planetarium: "sparkles",
-            .school: "graduationcap.fill",
-            .university: "building.columns.fill",
-            .movieTheater: "film.fill",
-            .nightlife: "music.mic",
-            .fireStation: "flame.fill",
-            .hospital: "cross.case.fill",
-            .pharmacy: "cross.fill",
-            .police: "shield.fill",
-            .castle: "building.fill",
-            .fortress: "shield.lefthalf.filled",
-            .landmark: "building.columns.fill",
-            .nationalMonument: "star.circle.fill",
-            .bakery: "takeoutbag.and.cup.and.straw",
-            .brewery: "mug.fill",
-            .cafe: "cup.and.saucer.fill",
-            .distillery: "wineglass.fill",
-            .foodMarket: "cart.fill",
-            .restaurant: "fork.knife",
-            .winery: "wineglass",
-            .animalService: "pawprint.fill",
-            .atm: "creditcard.fill",
-            .automotiveRepair: "wrench.and.screwdriver.fill",
-            .bank: "building.columns.fill",
-            .beauty: "scissors",
-            .evCharger: "bolt.car.fill",
-            .fitnessCenter: "dumbbell.fill",
-            .laundry: "washer.fill",
-            .mailbox: "envelope.fill",
-            .postOffice: "envelope.fill",
-            .restroom: "figure.restroom",
-            .spa: "drop.fill",
-            .store: "bag.fill",
-            .amusementPark: "ferriswheel",
-            .aquarium: "tortoise.fill",
-            .beach: "beach.umbrella.fill",
-            .campground: "tent.fill",
-            .fairground: "carousel.fill",
-            .marina: "sailboat.fill",
-            .nationalPark: "leaf.fill",
-            .park: "tree.fill",
-            .rvPark: "car.fill",
-            .zoo: "pawprint.fill",
-            .baseball: "baseball.fill",
-            .basketball: "basketball.fill",
-            .bowling: "figure.bowling",
-            .goKart: "car.circle.fill",
-            .golf: "flag.and.hole.fill",
-            .hiking: "figure.hiking",
-            .miniGolf: "flag.and.hole.fill",
-            .rockClimbing: "figure.climbing",
-            .skatePark: "figure.skating",
-            .skating: "figure.skating",
-            .skiing: "figure.skiing.downhill",
-            .soccer: "soccerball",
-            .stadium: "sportscourt.fill",
-            .tennis: "tennisball.fill",
-            .volleyball: "volleyball.fill",
-            .airport: "airplane",
-            .carRental: "car.fill",
-            .conventionCenter: "building.2.fill",
-            .gasStation: "fuelpump.fill",
-            .hotel: "bed.double.fill",
-            .parking: "parkingsign.circle.fill",
-            .publicTransport: "bus.fill",
-            .fishing: "fish.fill",
-            .kayaking: "figure.rowing",
-            .surfing: "figure.surfing",
-            .swimming: "figure.pool.swim",
-        ]
-
-        static func getIconFor(pointOfInterest: MKPointOfInterestCategory?) -> String {
-            if pointOfInterest == nil {
-                return "mappin"
-            }
-            return pointOfInterestIcons[pointOfInterest!] ?? "mappin"
         }
     }
 
