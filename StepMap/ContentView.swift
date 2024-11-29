@@ -18,6 +18,9 @@ struct ContentView: View {
     @State private var position = MapCameraPosition.automatic
     @State private var showSearch: Bool = true
     @State private var directions: [MKRoute] = []
+    @State private var destination: MKMapItem?
+
+    
     @State var healthKitAccess = false
     @State var stepLength: Double?
 
@@ -31,6 +34,8 @@ struct ContentView: View {
     // Get walkingSpeed
     // show how long does the route take with said walking speed
     // Add favorite locations - like home, work, etc (probably should be stored in core data tho:/)
+    
+    // FIX: search is bad lol
 
     
     // How to speed up?
@@ -39,6 +44,9 @@ struct ContentView: View {
     var body: some View {
         Map(position: $position) {
             ForEach(0..<directions.count) { i in
+                if destination != nil {
+                    Marker(item: destination!)
+                }
                 MapPolyline(directions[i].polyline)
                     .stroke(Defaults.routeColor[i], lineWidth: Defaults.routeWidth)
             }
@@ -48,7 +56,7 @@ struct ContentView: View {
             content: {
                 SearchView(
                     directions: $directions, stepLength: $stepLength,
-                    locationManager: locationManager
+                    locationManager: locationManager, destination: $destination
                 )
                 .ignoresSafeArea()
             }
@@ -77,6 +85,14 @@ struct ContentView: View {
                 stepLength = await healthKitManager.getStepLength()
             }
         }
+    }
+    
+    func getLastPointFor(route: MKRoute) -> CLLocationCoordinate2D? {
+        let pointCount =  route.polyline.pointCount
+        if pointCount > 0 {
+            return route.polyline.points()[pointCount - 1].coordinate
+        }
+        return nil
     }
 
     func save(value: String) {

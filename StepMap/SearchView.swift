@@ -15,6 +15,7 @@ struct SearchView: View {
     @Binding var stepLength: Double?
     @State var showSteps = true
     var locationManager: LocationManager
+    @Binding var destination: MKMapItem?
 
     var body: some View {
         VStack {
@@ -50,7 +51,7 @@ struct SearchView: View {
                 ForEach(self.locations, id: \.identifier) { location in
                     SearchItemView(
                         location: location, directions: $directions, stepLength: $stepLength,
-                        showSteps: $showSteps)
+                        showSteps: $showSteps, destination: $destination)
                 }
             }
         }

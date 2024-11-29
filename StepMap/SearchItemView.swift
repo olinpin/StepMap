@@ -17,6 +17,7 @@ struct SearchItemView: View {
     @Binding var stepLength: Double?
     @Binding var showSteps: Bool
     @State var localDirections: [MKRoute] = []
+    @Binding var destination: MKMapItem?
 
     var body: some View {
 
@@ -108,6 +109,7 @@ struct SearchItemView: View {
             }
             self.localDirections = response.routes
             self.distance = response.routes.first?.distance
+            self.destination = location
         }
     }
 }
