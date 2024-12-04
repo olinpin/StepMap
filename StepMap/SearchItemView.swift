@@ -52,9 +52,18 @@ struct SearchItemView: View {
                                 Spacer()
                             }
                             HStack {
-                                Text("\(location.placemark.locality ?? "")")
-                                    //                    .font(.)
-                                    .foregroundStyle(.gray)
+                                VStack(alignment: .leading) {
+                                    if (location.placemark.thoroughfare != nil) {
+                                        Text(
+                                            "\(location.placemark.thoroughfare ?? "") \(location.placemark.subThoroughfare ?? "")"
+                                        )
+                                        .foregroundStyle(.gray)
+                                    }
+                                    if (location.placemark.locality != nil) {
+                                        Text("\(location.placemark.locality ?? "")")
+                                            .foregroundStyle(.gray)
+                                    }
+                                }
                                 Spacer()
                             }
                         }
@@ -71,13 +80,13 @@ struct SearchItemView: View {
             }
         )
         .frame(height: 100)
-//        .onAppear {
-//            findDirections()
-//        }
+        //        .onAppear {
+        //            findDirections()
+        //        }
     }
 
     func formatDistance(distance: CLLocationDistance) -> String {
-        let steps = distance * (stepLength ?? 0)
+        let steps = distance / (stepLength ?? 1)
         if steps != 0 && showSteps {
             let formatter = NumberFormatter()
             formatter.maximumFractionDigits = 0

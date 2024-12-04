@@ -30,10 +30,10 @@ struct SearchView: View {
                             self.locations = []
                         }
                     }
-                    //                    .onAppear {
-                    //                        // TODO: delete this, it's for debug only
-                    //                        search(for: self.query)
-                    //                    }
+                    //                                        .onAppear {
+                    //                                            // TODO: delete this, it's for debug only
+                    //                                            search(for: self.query)
+                    //                                        }
                     .overlay {
                         HStack {
                             Spacer()
