@@ -1,6 +1,6 @@
 //
-//  StepMapWidgets.swift
-//  StepMapWidgets
+//  StepsWidget.swift
+//  StepsWidget
 //
 //  Created by Oliver Hnát on 04.12.2024.
 //
@@ -8,7 +8,7 @@
 import WidgetKit
 import SwiftUI
 
-struct Provider: TimelineProvider {
+struct StepsWidgetProvider: TimelineProvider {
     func placeholder(in context: Context) -> SimpleEntry {
         SimpleEntry(date: Date(), emoji: "😀")
     }
@@ -43,8 +43,8 @@ struct SimpleEntry: TimelineEntry {
     let emoji: String
 }
 
-struct StepMapWidgetsEntryView : View {
-    var entry: Provider.Entry
+struct StepsWidgetEntryView : View {
+    var entry: StepsWidgetProvider.Entry
 
     var body: some View {
         VStack {
@@ -57,27 +57,27 @@ struct StepMapWidgetsEntryView : View {
     }
 }
 
-struct StepMapWidgets: Widget {
-    let kind: String = "StepMapWidgets"
+struct StepsWidget: Widget {
+    let kind: String = "oliverhnat.StepMap.Steps"
 
     var body: some WidgetConfiguration {
-        StaticConfiguration(kind: kind, provider: Provider()) { entry in
+        StaticConfiguration(kind: kind, provider: StepsWidgetProvider()) { entry in
             if #available(iOS 17.0, *) {
-                StepMapWidgetsEntryView(entry: entry)
+                StepsWidgetEntryView(entry: entry)
                     .containerBackground(.fill.tertiary, for: .widget)
             } else {
-                StepMapWidgetsEntryView(entry: entry)
+                StepsWidgetEntryView(entry: entry)
                     .padding()
                     .background()
             }
         }
-        .configurationDisplayName("My Widget")
-        .description("This is an example widget.")
+        .configurationDisplayName("Steps Widget")
+        .description("Widget that shows you your current step count.")
     }
 }
 
 #Preview(as: .systemSmall) {
-    StepMapWidgets()
+    StepsWidget()
 } timeline: {
     SimpleEntry(date: .now, emoji: "😀")
     SimpleEntry(date: .now, emoji: "🤩")
