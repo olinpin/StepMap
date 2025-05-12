@@ -8,7 +8,7 @@
 import CoreLocation
 import Foundation
 
-class LocationManager: NSObject, ObservableObject, CLLocationManagerDelegate {
+public class LocationManager: NSObject, ObservableObject, CLLocationManagerDelegate {
     let manager = CLLocationManager()
 
     @Published var location: CLLocationCoordinate2D?
@@ -26,13 +26,13 @@ class LocationManager: NSObject, ObservableObject, CLLocationManagerDelegate {
         manager.requestWhenInUseAuthorization()
     }
 
-    func locationManager(_ manager: CLLocationManager, didUpdateLocations locations: [CLLocation]) {
+    public func locationManager(_ manager: CLLocationManager, didUpdateLocations locations: [CLLocation]) {
         location = locations.first?.coordinate
     }
 }
 
 extension LocationManager {
-    func locationManager(
+    public func locationManager(
         _ manager: CLLocationManager, didChangeAuthorization status: CLAuthorizationStatus
     ) {
         switch status {
@@ -51,7 +51,16 @@ extension LocationManager {
         }
     }
 
-    func locationManager(_ manager: CLLocationManager, didFailWithError error: any Error) {
+    public func locationManager(_ manager: CLLocationManager, didFailWithError error: any Error) {
         print(error)
     }
+}
+
+
+extension CLLocationCoordinate2D: Equatable {
+    public static func == (lhs: CLLocationCoordinate2D, rhs: CLLocationCoordinate2D) -> Bool {
+        return lhs.latitude == rhs.latitude && lhs.longitude == rhs.longitude
+    }
+    
+    
 }

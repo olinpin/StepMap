@@ -13,9 +13,12 @@ class HealthKitManager: ObservableObject {
     let allTypes: Set = [
         HKQuantityType(.walkingSpeed),
         HKQuantityType(.walkingStepLength),
+        HKQuantityType(.stepCount)
     ]
 
     var stepLength: Double?
+    
+    var stepCount: Int?
 
     func requestAccess() async {
         do {
@@ -49,5 +52,23 @@ class HealthKitManager: ObservableObject {
             )
         }
     }
+    
+//    func getCurrentStepCount() async -> Double? {
+//        let stepCountType = HKQuantityType(.stepCount)
+//
+//        let query = HKStatisticsQueryDescriptor(
+//            predicate: HKSamplePredicate.quantitySample(type: stepCountType),
+//            options: .cumulativeSum)
+//        
+//        do {
+//            let results = try await query.result(for: healthStore)
+//            stepCount = results?.sumQuantity().val
+//            return stepCount
+//        } catch {
+//            fatalError(
+//                "Something went wrong while getting step length from healthKit: \(error.localizedDescription)"
+//            )
+//        }
+//    }
 
 }

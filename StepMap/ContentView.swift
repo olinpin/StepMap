@@ -15,7 +15,7 @@ struct ContentView: View {
     @StateObject var locationManager = LocationManager()
     @StateObject var healthKitManager = HealthKitManager()
 
-    @State private var position = MapCameraPosition.automatic
+    @State private var position: MapCameraPosition = .automatic
     @State private var showSearch: Bool = true
     @State private var directions: [MKRoute] = []
     @State private var destination: MKMapItem?
@@ -43,6 +43,7 @@ struct ContentView: View {
     // if user clicks on the place, display better view and then calculate route there
     var body: some View {
         Map(position: $position) {
+            UserAnnotation()
             ForEach(0..<directions.count) { i in
                 if destination != nil {
                     Marker(item: destination!)
@@ -65,26 +66,31 @@ struct ContentView: View {
             // TODO: make sure the user location stays on the map even if camera moves
             MapUserLocationButton()
                 .onTapGesture {
-                    locationManager.requestAuthorization()
-                    locationManager.requestLocation()
-                    if let userLocation = locationManager.location {
-                        position = .camera(
-                            MapCamera(centerCoordinate: userLocation, distance: 1000))
-                    }
+                    zoomUserLocation()
                 }
             MapCompass()
         }
         .onAppear {
-            locationManager.requestAuthorization()
-            locationManager.requestLocation()
-            if let userLocation = locationManager.location {
-                position = .camera(MapCamera(centerCoordinate: userLocation, distance: 1000))
-            }
+            zoomUserLocation()
             Task {
                 await healthKitManager.requestAccess()
                 stepLength = await healthKitManager.getStepLength()
             }
         }
+        .onChange(of: locationManager.location) {
+            zoomUserLocation()
+        }
+    }
+    
+    func zoomUserLocation() {
+        withAnimation {
+            locationManager.requestAuthorization()
+            locationManager.requestLocation()
+            if let userLocation = locationManager.location {
+                position = .camera(MapCamera(centerCoordinate: userLocation, distance: 1000))
+            }
+        }
+
     }
     
     func getLastPointFor(route: MKRoute) -> CLLocationCoordinate2D? {
