@@ -42,16 +42,19 @@ struct ContentView: View {
     // calculate only the distance between the start and end instead of getting directions for everything
     // if user clicks on the place, display better view and then calculate route there
     var body: some View {
-        Map(position: $position) {
-            UserAnnotation()
-            ForEach(0..<directions.count) { i in
-                if destination != nil {
-                    Marker(item: destination!)
-                }
-                MapPolyline(directions[i].polyline)
-                    .stroke(Defaults.routeColor[i], lineWidth: Defaults.routeWidth)
-            }
+        ZStack {
+        MapView(locationManager: locationManager)
+//        Map(position: $position) {
+//            UserAnnotation()
+//            ForEach(0..<directions.count) { i in
+//                if destination != nil {
+//                    Marker(item: destination!)
+//                }
+//                MapPolyline(directions[i].polyline)
+//                    .stroke(Defaults.routeColor[i], lineWidth: Defaults.routeWidth)
+//            }
         }
+        .ignoresSafeArea()
         .sheet(
             isPresented: $showSearch,
             content: {
