@@ -14,6 +14,7 @@ class UIKitMapView: UIViewController, MKMapViewDelegate, CLLocationManagerDelega
     let mapView : MKMapView = {
         let map = MKMapView()
         map.showsUserTrackingButton = true
+        map.showsUserLocation = true
         return map
     }()
     
@@ -22,13 +23,6 @@ class UIKitMapView: UIViewController, MKMapViewDelegate, CLLocationManagerDelega
         super.init(nibName: nil, bundle: nil)
     }
     
-    func locationManager(_ manager: CLLocationManager, didUpdateLocations locations: [CLLocation]) {
-        if let userLocation = locations.last {
-            let viewRegion = MKCoordinateRegion(center: userLocation.coordinate, latitudinalMeters: 2000, longitudinalMeters: 2000)
-            mapView.setRegion(viewRegion, animated: true)
-        }
-    }
-
     required init?(coder: NSCoder) {
         fatalError("init(coder:) has not been implemented")
     }
@@ -48,7 +42,7 @@ class UIKitMapView: UIViewController, MKMapViewDelegate, CLLocationManagerDelega
             let viewRegion = MKCoordinateRegion(center: userLocation, latitudinalMeters: 2000, longitudinalMeters: 2000)
             mapView.setRegion(viewRegion, animated: true)
         }
-        mapView.showsUserLocation = true
+        mapView.setUserTrackingMode(.follow, animated: true)
     }
     
     private func setMapConstraints() {
