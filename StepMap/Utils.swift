@@ -10,10 +10,10 @@ import MapKit
 import SwiftUI
 
 struct Defaults {
-    static let routeColor: [Color] = [
+    static let routeColor: [UIColor] = [
         .blue,
-        .red,
-        .yellow,
+//        .red,
+//        .yellow,
     ]
     static let routeWidth: CGFloat = 8
 

@@ -43,6 +43,8 @@ struct SearchView: View {
                                     .foregroundStyle(.gray)
                                     .onTapGesture {
                                         query = ""
+                                        viewModel.destination = nil
+                                        viewModel.directions = []
                                     }
                             }
                         }

@@ -8,12 +8,14 @@
 import UIKit
 import MapKit
 import SwiftUI
+import Combine
 
 class UIKitMapView: UIViewController, MKMapViewDelegate, CLLocationManagerDelegate {
     var locationManager: LocationManager
     var viewModel: ViewModel
-    var directions: [MKRoute] = []
-    var destination: MKMapItem?
+    var oldDirections: [MKRoute] = []
+    var oldDestination: MKMapItemAnnotation?
+    private var cancellables = Set<AnyCancellable>()
     let mapView : MKMapView = {
         let map = MKMapView()
         map.showsUserTrackingButton = true
@@ -34,6 +36,7 @@ class UIKitMapView: UIViewController, MKMapViewDelegate, CLLocationManagerDelega
     
     override func viewDidLoad() {
         super.viewDidLoad()
+        bindViewModel()
         
         mapView.delegate = self
         setMapConstraints()
@@ -83,6 +86,42 @@ class UIKitMapView: UIViewController, MKMapViewDelegate, CLLocationManagerDelega
         self.present(searchViewConctroller, animated: true, completion: nil)
     }
     
+    private func refreshRoute() {
+        DispatchQueue.main.async {
+            for route in self.oldDirections {
+                self.mapView.removeOverlay(route.polyline)
+            }
+            self.oldDirections = self.viewModel.directions
+            for route in self.viewModel.directions {
+                self.mapView.addOverlay(route.polyline, level: .aboveRoads)
+            }
+            
+            if let destination = self.oldDestination {
+                self.mapView.removeAnnotation(destination)
+            }
+            if let destination = self.viewModel.destination {
+                self.oldDestination = MKMapItemAnnotation(mapItem: destination)
+                self.mapView.addAnnotation(self.oldDestination!)
+            }
+        }
+    }
+    
+    func mapView(_ mapView: MKMapView, rendererFor overlay: any MKOverlay) -> MKOverlayRenderer {
+        let renderer = MKGradientPolylineRenderer(overlay: overlay)
+        renderer.setColors(Defaults.routeColor, locations: [])
+        renderer.lineCap = .round
+        renderer.lineWidth = Defaults.routeWidth
+        return renderer
+    }
+    
+    private func bindViewModel() {
+        viewModel.$directions
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] _ in
+                self?.refreshRoute()
+            }
+            .store(in: &cancellables)
+    }
 }
 
 struct MapView: UIViewControllerRepresentable {

@@ -15,7 +15,7 @@ struct ContentView: View {
     @StateObject var locationManager = LocationManager()
     @StateObject var healthKitManager = HealthKitManager()
     
-
+    
     // TODO: create a map
     // Add navigation to the map
     // after you click the navigation button, show the start and end place on the map with a tag or whatever it's called
@@ -28,22 +28,13 @@ struct ContentView: View {
     // Add favorite locations - like home, work, etc (probably should be stored in core data tho:/)
     
     // FIX: search is bad lol
-
+    
     
     // How to speed up?
     // calculate only the distance between the start and end instead of getting directions for everything
     // if user clicks on the place, display better view and then calculate route there
     var body: some View {
         MapView(locationManager: locationManager, viewModel: viewModel)
-        //        Map(position: $position) {
-        //            UserAnnotation()
-        //            ForEach(0..<directions.count) { i in
-        //                if destination != nil {
-        //                    Marker(item: destination!)
-        //                }
-        //                MapPolyline(directions[i].polyline)
-        //                    .stroke(Defaults.routeColor[i], lineWidth: Defaults.routeWidth)
-        //            }
             .ignoresSafeArea()
             .onAppear {
                 Task {
@@ -59,7 +50,7 @@ struct ContentView: View {
         }
         return nil
     }
-
+    
     func save(value: String) {
         viewModel.saveValue(value)
     }
