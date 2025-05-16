@@ -18,6 +18,7 @@ class UIKitMapView: UIViewController, MKMapViewDelegate, CLLocationManagerDelega
     var detailsDisplayed = false
     private var cancellables = Set<AnyCancellable>()
     let searchViewConctroller: UIHostingController<SearchView>
+    var annotationViewController: UIHostingController<AnnotationView>?
     let mapView : MKMapView = {
         let map = MKMapView()
         map.showsUserTrackingButton = true
@@ -120,6 +121,38 @@ class UIKitMapView: UIViewController, MKMapViewDelegate, CLLocationManagerDelega
     
     func mapView(_ mapView: MKMapView, didSelect annotation: any MKAnnotation) {
         hideSearchView()
+        hideAnnotationView()
+        showAnnotation(annotation: annotation)
+    }
+    
+    func showAnnotation(annotation: MKAnnotation) {
+        let location = CLLocation(latitude: annotation.coordinate.latitude,
+                                  longitude: annotation.coordinate.longitude)
+        CLGeocoder().reverseGeocodeLocation(location) { placemarks, error in
+            guard let placemark = placemarks?.first, error == nil else { return }
+            print(placemark)
+            
+            self.annotationViewController = UIHostingController(rootView: AnnotationView(pm: placemark))
+            if let avc = self.annotationViewController {
+                avc.view.backgroundColor = .clear
+                avc.modalPresentationStyle = .pageSheet
+                avc.edgesForExtendedLayout = [.top, .bottom, .left, .right]
+                if let sheet = avc.sheetPresentationController {
+                    let smallDetentId = UISheetPresentationController.Detent.Identifier("small")
+                    let smallDetent = UISheetPresentationController.Detent.custom(identifier: smallDetentId) { context in
+                        return 350
+                    }
+                    sheet.detents = [smallDetent, .large()]
+                    sheet.largestUndimmedDetentIdentifier = .large
+                    sheet.prefersScrollingExpandsWhenScrolledToEdge = false
+                    sheet.prefersGrabberVisible = true
+                    sheet.prefersEdgeAttachedInCompactHeight = true
+                    sheet.widthFollowsPreferredContentSizeWhenEdgeAttached = true
+                }
+                self.present(avc, animated: true, completion: nil)
+            }
+        }
+
     }
     
     func mapView(_ mapView: MKMapView, didDeselect annotation: any MKAnnotation) {
@@ -128,6 +161,11 @@ class UIKitMapView: UIViewController, MKMapViewDelegate, CLLocationManagerDelega
     
     func hideSearchView() {
         searchViewConctroller.dismiss(animated: true)
+    }
+    func hideAnnotationView() {
+        if let avc = self.annotationViewController {
+            avc.dismiss(animated: true)
+        }
     }
     
     private func bindViewModel() {
