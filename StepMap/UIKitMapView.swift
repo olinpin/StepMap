@@ -15,11 +15,15 @@ class UIKitMapView: UIViewController, MKMapViewDelegate, CLLocationManagerDelega
     var viewModel: ViewModel
     var oldDirections: [MKRoute] = []
     var oldDestination: MKMapItemAnnotation?
+    var detailsDisplayed = false
     private var cancellables = Set<AnyCancellable>()
+    let searchViewConctroller: UIHostingController<SearchView>
     let mapView : MKMapView = {
         let map = MKMapView()
         map.showsUserTrackingButton = true
         map.showsUserLocation = true
+        map.selectableMapFeatures = .pointsOfInterest
+        map.pitchButtonVisibility = .adaptive
         return map
     }()
     
@@ -27,6 +31,7 @@ class UIKitMapView: UIViewController, MKMapViewDelegate, CLLocationManagerDelega
     init(locationManager: LocationManager, viewModel: ViewModel) {
         self.locationManager = locationManager
         self.viewModel = viewModel
+        self.searchViewConctroller = UIHostingController(rootView: SearchView(locationManager: locationManager, viewModel: viewModel))
         super.init(nibName: nil, bundle: nil)
     }
     
@@ -44,7 +49,7 @@ class UIKitMapView: UIViewController, MKMapViewDelegate, CLLocationManagerDelega
     }
     
     override func viewDidAppear(_ animated: Bool) {
-        setSearchView()
+        showSearchView()
     }
     
     private func setLocation() {
@@ -66,8 +71,7 @@ class UIKitMapView: UIViewController, MKMapViewDelegate, CLLocationManagerDelega
         mapView.trailingAnchor.constraint(equalTo: self.view.trailingAnchor).isActive = true
     }
     
-    private func setSearchView() {
-        let searchViewConctroller = UIHostingController(rootView: SearchView(locationManager: locationManager, viewModel: viewModel))
+    private func showSearchView() {
         searchViewConctroller.view.backgroundColor = .clear
         searchViewConctroller.modalPresentationStyle = .pageSheet
         searchViewConctroller.edgesForExtendedLayout = [.top, .bottom, .left, .right]
@@ -112,6 +116,18 @@ class UIKitMapView: UIViewController, MKMapViewDelegate, CLLocationManagerDelega
         renderer.lineCap = .round
         renderer.lineWidth = Defaults.routeWidth
         return renderer
+    }
+    
+    func mapView(_ mapView: MKMapView, didSelect annotation: any MKAnnotation) {
+        hideSearchView()
+    }
+    
+    func mapView(_ mapView: MKMapView, didDeselect annotation: any MKAnnotation) {
+        showSearchView()
+    }
+    
+    func hideSearchView() {
+        searchViewConctroller.dismiss(animated: true)
     }
     
     private func bindViewModel() {
