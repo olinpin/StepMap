@@ -11,6 +11,9 @@ import SwiftUI
 
 class UIKitMapView: UIViewController, MKMapViewDelegate, CLLocationManagerDelegate {
     var locationManager: LocationManager
+    var viewModel: ViewModel
+    var directions: [MKRoute] = []
+    var destination: MKMapItem?
     let mapView : MKMapView = {
         let map = MKMapView()
         map.showsUserTrackingButton = true
@@ -18,8 +21,10 @@ class UIKitMapView: UIViewController, MKMapViewDelegate, CLLocationManagerDelega
         return map
     }()
     
-    init(locationManager: LocationManager) {
+    
+    init(locationManager: LocationManager, viewModel: ViewModel) {
         self.locationManager = locationManager
+        self.viewModel = viewModel
         super.init(nibName: nil, bundle: nil)
     }
     
@@ -33,6 +38,10 @@ class UIKitMapView: UIViewController, MKMapViewDelegate, CLLocationManagerDelega
         mapView.delegate = self
         setMapConstraints()
         setLocation()
+    }
+    
+    override func viewDidAppear(_ animated: Bool) {
+        setSearchView()
     }
     
     private func setLocation() {
@@ -54,14 +63,35 @@ class UIKitMapView: UIViewController, MKMapViewDelegate, CLLocationManagerDelega
         mapView.trailingAnchor.constraint(equalTo: self.view.trailingAnchor).isActive = true
     }
     
+    private func setSearchView() {
+        let searchViewConctroller = UIHostingController(rootView: SearchView(locationManager: locationManager, viewModel: viewModel))
+        searchViewConctroller.view.backgroundColor = .clear
+        searchViewConctroller.modalPresentationStyle = .pageSheet
+        searchViewConctroller.edgesForExtendedLayout = [.top, .bottom, .left, .right]
+        if let sheet = searchViewConctroller.sheetPresentationController {
+            let smallDetentId = UISheetPresentationController.Detent.Identifier("small")
+            let smallDetent = UISheetPresentationController.Detent.custom(identifier: smallDetentId) { context in
+                return 200
+            }
+            sheet.detents = [smallDetent, .large()]
+            sheet.largestUndimmedDetentIdentifier = .large
+            sheet.prefersScrollingExpandsWhenScrolledToEdge = false
+            sheet.prefersGrabberVisible = true
+            sheet.prefersEdgeAttachedInCompactHeight = true
+            sheet.widthFollowsPreferredContentSizeWhenEdgeAttached = true
+        }
+        self.present(searchViewConctroller, animated: true, completion: nil)
+    }
+    
 }
 
 struct MapView: UIViewControllerRepresentable {
     typealias UIViewControllerType = UIKitMapView
     @StateObject var locationManager: LocationManager
+    @ObservedObject var viewModel: ViewModel
 
     func makeUIViewController(context: Context) -> UIKitMapView {
-        return UIKitMapView(locationManager: locationManager)
+        return UIKitMapView(locationManager: locationManager, viewModel: viewModel)
     }
     
     func updateUIViewController(_ uiViewController: UIKitMapView, context: Context) {

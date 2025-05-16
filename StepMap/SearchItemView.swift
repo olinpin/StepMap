@@ -13,20 +13,20 @@ import SwiftUI
 struct SearchItemView: View {
     var location: MKMapItem
     @State var distance: CLLocationDistance?
-    @Binding var directions: [MKRoute]
-    @Binding var stepLength: Double?
     @Binding var showSteps: Bool
     @State var localDirections: [MKRoute] = []
-    @Binding var destination: MKMapItem?
+    @ObservedObject var viewModel: ViewModel
 
     var body: some View {
 
         Button(
             action: {
                 if localDirections == [] {
+                    print("finding directions")
                     findDirections()
                 }
-                directions = localDirections
+                viewModel.directions = localDirections
+                print("Directions set")
             },
             label: {
                 HStack {
@@ -86,7 +86,7 @@ struct SearchItemView: View {
     }
 
     func formatDistance(distance: CLLocationDistance) -> String {
-        let steps = distance / (stepLength ?? 1)
+        let steps = distance / (viewModel.stepLength ?? 1)
         if steps != 0 && showSteps {
             let formatter = NumberFormatter()
             formatter.maximumFractionDigits = 0
@@ -118,7 +118,7 @@ struct SearchItemView: View {
             }
             self.localDirections = response.routes
             self.distance = response.routes.first?.distance
-            self.destination = location
+            viewModel.destination = location
         }
     }
 }

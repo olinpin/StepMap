@@ -11,56 +11,54 @@ import SwiftUI
 struct SearchView: View {
     @State private var query: String = ""
     @State private var locations: [MKMapItem] = []
-    @Binding var directions: [MKRoute]
-    @Binding var stepLength: Double?
     @State var showSteps = true
     var locationManager: LocationManager
-    @Binding var destination: MKMapItem?
+    @ObservedObject var viewModel: ViewModel
 
     var body: some View {
-        VStack {
-            HStack {
-                Image(systemName: "magnifyingglass")
-                TextField("Search for any location", text: $query)
-                    .autocorrectionDisabled()
-                    .onChange(of: self.query) {
-                        if query.count > 0 {
-                            search(for: self.query)
-                        } else {
-                            self.locations = []
+        ZStack {
+            Rectangle()
+                .fill(.thinMaterial)
+                .ignoresSafeArea()
+            VStack {
+                HStack {
+                    Image(systemName: "magnifyingglass")
+                    TextField("Search for any location", text: $query)
+                        .autocorrectionDisabled()
+                        .onChange(of: self.query) {
+                            if query.count > 0 {
+                                search(for: self.query)
+                            } else {
+                                self.locations = []
+                            }
                         }
-                    }
                     //                                        .onAppear {
                     //                                            // TODO: delete this, it's for debug only
                     //                                            search(for: self.query)
                     //                                        }
-                    .overlay {
-                        HStack {
-                            Spacer()
-                            Image(systemName: "multiply.circle.fill")
-                                .foregroundStyle(.gray)
-                                .onTapGesture {
-                                    query = ""
-                                }
+                        .overlay {
+                            HStack {
+                                Spacer()
+                                Image(systemName: "multiply.circle.fill")
+                                    .foregroundStyle(.gray)
+                                    .onTapGesture {
+                                        query = ""
+                                    }
+                            }
                         }
+                }
+                .modifier(TextFieldGrayBackgroudColor())
+                Spacer()
+                ScrollView {
+                    ForEach(self.locations, id: \.identifier) { location in
+                        SearchItemView(location: location, showSteps: $showSteps, viewModel: viewModel)
                     }
-            }
-            .modifier(TextFieldGrayBackgroudColor())
-            Spacer()
-            ScrollView {
-                ForEach(self.locations, id: \.identifier) { location in
-                    SearchItemView(
-                        location: location, directions: $directions, stepLength: $stepLength,
-                        showSteps: $showSteps, destination: $destination)
                 }
             }
+            .padding()
+            .interactiveDismissDisabled()
+            .ignoresSafeArea()
         }
-        .padding()
-        .interactiveDismissDisabled()
-
-        .presentationDetents([.height(200), .large])
-        .presentationBackground(.regularMaterial)
-        .presentationBackgroundInteraction(.enabled(upThrough: .large))
     }
 
     func search(for text: String) {
