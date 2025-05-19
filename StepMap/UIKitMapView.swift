@@ -15,7 +15,6 @@ class UIKitMapView: UIViewController, MKMapViewDelegate, CLLocationManagerDelega
     var viewModel: ViewModel
     var oldDirections: [MKRoute] = []
     var oldDestination: MKMapItemAnnotation?
-    var detailsDisplayed = false
     private var cancellables = Set<AnyCancellable>()
     let searchViewConctroller: UIHostingController<SearchView>
     var annotationViewController: UIHostingController<AnnotationView>?
@@ -126,13 +125,13 @@ class UIKitMapView: UIViewController, MKMapViewDelegate, CLLocationManagerDelega
     }
     
     func showAnnotation(annotation: MKAnnotation) {
+        viewModel.showDetails = true
         let location = CLLocation(latitude: annotation.coordinate.latitude,
                                   longitude: annotation.coordinate.longitude)
         CLGeocoder().reverseGeocodeLocation(location) { placemarks, error in
             guard let placemark = placemarks?.first, error == nil else { return }
-            print(placemark)
             
-            self.annotationViewController = UIHostingController(rootView: AnnotationView(pm: placemark))
+            self.annotationViewController = UIHostingController(rootView: AnnotationView(pm: placemark, title: annotation.title as? String, coordinate: location, viewModel: self.viewModel))
             if let avc = self.annotationViewController {
                 avc.view.backgroundColor = .clear
                 avc.modalPresentationStyle = .pageSheet
@@ -156,7 +155,9 @@ class UIKitMapView: UIViewController, MKMapViewDelegate, CLLocationManagerDelega
     }
     
     func mapView(_ mapView: MKMapView, didDeselect annotation: any MKAnnotation) {
-        showSearchView()
+        if viewModel.showDetails {
+            viewModel.showDetails = false
+        }
     }
     
     func hideSearchView() {
@@ -173,6 +174,17 @@ class UIKitMapView: UIViewController, MKMapViewDelegate, CLLocationManagerDelega
             .receive(on: DispatchQueue.main)
             .sink { [weak self] _ in
                 self?.refreshRoute()
+            }
+            .store(in: &cancellables)
+        viewModel.$showDetails
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] value in
+                print(value)
+                if !value {
+                    self?.hideAnnotationView()
+                    self?.showSearchView()
+//                    self?.mapView.selectedAnnotations = []
+                }
             }
             .store(in: &cancellables)
     }

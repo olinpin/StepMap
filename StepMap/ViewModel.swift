@@ -13,6 +13,8 @@ class ViewModel: ObservableObject {
     @Published var directions: [MKRoute] = []
     @Published var stepLength: Double?
     @Published var destination: MKMapItem?
+    @Published var showDetails = false
+
 
     func saveValue(_ value: String) {
         UserDefaults.standard.set(value, forKey: "test")

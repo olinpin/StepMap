@@ -10,12 +10,30 @@ import MapKit
 
 struct AnnotationView: View {
     var pm: CLPlacemark
+    var title: String?
+    var coordinate: CLLocation
+    @ObservedObject var viewModel: ViewModel
     var body: some View {
         ZStack {
             Rectangle()
                 .fill(.thinMaterial)
                 .ignoresSafeArea()
-            VStack {
+            VStack(alignment: .leading) {
+                HStack(alignment: .top) {
+                    Text((title ?? pm.areasOfInterest?.first ?? pm.name) ?? "\(coordinate.coordinate.latitude.description)º, \(coordinate.coordinate.longitude.description)")
+                        .font(.title)
+                        .bold()
+                    Spacer()
+                    Button(action: {
+                        viewModel.showDetails = false
+                        
+                    }, label: {
+                        Image(systemName: "multiply.circle")
+                    })
+                }
+                .padding(.horizontal)
+                .padding(.top, 20)
+                Spacer()
                 Text(pm.locality ?? "")
                 Text(pm.name ?? "")
                 Text("Name: \(pm.name ?? "")")
@@ -31,6 +49,8 @@ struct AnnotationView: View {
                     Image(systemName: Defaults.getIconFor(pointOfInterest: MKMapItem(placemark: mkPlacemark).pointOfInterestCategory))
                 }
             }
+            .frame(maxWidth: .infinity)
+            .ignoresSafeArea()
         }
     }
 }
