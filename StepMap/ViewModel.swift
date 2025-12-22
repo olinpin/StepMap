@@ -16,6 +16,7 @@ class ViewModel: ObservableObject {
     // MARK: - Waypoint-based routing
     @Published var waypoints: [MKMapItem] = []  // Ordered list of stops
     @Published var routeLegs: [MKRoute] = []    // Route between each waypoint pair
+    @Published var shouldZoomToRoute = false    // Whether to zoom when route updates
     
     // Computed property: all polylines for map display (backwards compatibility)
     var directions: [MKRoute] {

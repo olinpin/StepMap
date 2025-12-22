@@ -22,6 +22,17 @@ struct Formatters {
         return "\(minutes) min"
     }
     
+    /// Formats time in compact form: "5m" or "1h 30m"
+    static func formatTimeCompact(_ seconds: TimeInterval) -> String {
+        if seconds < 60 { return "<1m" }
+        let hours = Int(seconds) / 3600
+        let minutes = (Int(seconds) % 3600) / 60
+        if hours > 0 {
+            return "\(hours)h \(minutes)m"
+        }
+        return "\(minutes)m"
+    }
+    
     /// Formats distance in meters to km or m
     static func formatDistance(_ meters: CLLocationDistance) -> String {
         if meters >= 1000 {
@@ -36,6 +47,17 @@ struct Formatters {
         formatter.numberStyle = .decimal
         formatter.maximumFractionDigits = 0
         return formatter.string(from: NSNumber(value: number)) ?? "\(number)"
+    }
+    
+    /// Formats steps with "steps" suffix
+    static func formatSteps(_ steps: Int) -> String {
+        return formatNumber(steps) + " steps"
+    }
+    
+    /// Estimates steps from distance using step length
+    static func estimateSteps(distance: CLLocationDistance, stepLength: Double?) -> Int? {
+        guard let stepLength = stepLength, stepLength > 0 else { return nil }
+        return Int(distance / stepLength)
     }
 }
 

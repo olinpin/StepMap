@@ -21,97 +21,33 @@ struct RoutePlannerView: View {
                 .ignoresSafeArea()
             
             VStack(spacing: 0) {
-                // MARK: - Route Stats Header (prominently displayed)
-                if !viewModel.waypoints.isEmpty {
-                    RouteStatsView(viewModel: viewModel)
-                        .padding(.horizontal)
-                        .padding(.top, 12)
-                        .padding(.bottom, 8)
-                }
+                // Drag indicator
+                Capsule()
+                    .fill(Color(.systemGray4))
+                    .frame(width: 36, height: 5)
+                    .padding(.top, 6)
+                    .padding(.bottom, 8)
                 
-                Divider()
-                
-                // MARK: - Waypoints List
                 if viewModel.waypoints.isEmpty {
-                    // Empty state - prompt to add destination
-                    VStack(spacing: 12) {
-                        Spacer()
-                        Image(systemName: "map")
-                            .font(.system(size: 44))
-                            .foregroundStyle(.secondary)
-                        Text("Plan Your Walk")
-                            .font(.title3)
-                            .bold()
-                        Text("Search for a destination or long-press the map to start planning your route")
-                            .font(.subheadline)
-                            .foregroundStyle(.secondary)
-                            .multilineTextAlignment(.center)
-                            .padding(.horizontal, 24)
-                        Spacer()
-                    }
-                    .frame(maxHeight: .infinity)
+                    EmptyRouteView(showingSearch: $showingSearch)
                 } else {
-                    // Waypoint list with reordering
-                    List {
-                        // Starting point (current location)
-                        HStack {
-                            Image(systemName: "location.fill")
-                                .foregroundStyle(.blue)
-                            Text("Current Location")
-                                .foregroundStyle(.secondary)
-                        }
-                        
-                        // Waypoints (reorderable)
-                        ForEach(viewModel.waypoints.indices, id: \.self) { index in
-                            WaypointRowView(
-                                waypoint: viewModel.waypoints[index],
-                                index: index,
-                                leg: index < viewModel.routeLegs.count ? viewModel.routeLegs[index] : nil,
-                                stepLength: viewModel.stepLength,
-                                isLast: index == viewModel.waypoints.count - 1
-                            )
-                        }
-                        .onMove { from, to in
+                    RouteActiveView(
+                        viewModel: viewModel,
+                        isCalculating: isCalculating,
+                        showingSearch: $showingSearch,
+                        onDelete: { index in
+                            viewModel.removeWaypoint(at: index)
+                            recalculateRoute()
+                        },
+                        onMove: { from, to in
                             viewModel.moveWaypoint(from: from, to: to)
                             recalculateRoute()
-                        }
-                        .onDelete { indexSet in
-                            indexSet.forEach { viewModel.removeWaypoint(at: $0) }
-                            recalculateRoute()
-                        }
-                    }
-                    .listStyle(.plain)
-                }
-                
-                // MARK: - Action Buttons
-                HStack(spacing: 12) {
-                    // Add Waypoint Button
-                    Button(action: { showingSearch = true }) {
-                        HStack {
-                            Image(systemName: "plus.circle.fill")
-                            Text(viewModel.waypoints.isEmpty ? "Add Destination" : "Add Stop")
-                        }
-                        .frame(maxWidth: .infinity)
-                        .padding()
-                        .background(Color.blue)
-                        .foregroundStyle(.white)
-                        .clipShape(RoundedRectangle(cornerRadius: 12))
-                    }
-                    
-                    // Clear Route Button (only if route exists)
-                    if !viewModel.waypoints.isEmpty {
-                        Button(action: {
+                        },
+                        onClearRoute: {
                             viewModel.clearRoute()
-                        }) {
-                            Image(systemName: "xmark.circle.fill")
-                                .padding()
-                                .background(Color.red.opacity(0.1))
-                                .foregroundStyle(.red)
-                                .clipShape(RoundedRectangle(cornerRadius: 12))
                         }
-                    }
+                    )
                 }
-                .padding()
             }
         }
         .sheet(isPresented: $showingSearch) {
@@ -120,6 +56,7 @@ struct RoutePlannerView: View {
                 locationManager: locationManager,
                 onWaypointSelected: { waypoint in
                     viewModel.addWaypoint(waypoint)
+                    viewModel.shouldZoomToRoute = true  // Zoom when adding via search
                     showingSearch = false
                     recalculateRoute()
                 }
@@ -139,5 +76,242 @@ struct RoutePlannerView: View {
                 isCalculating = false
             }
         }
+    }
+}
+
+// MARK: - Empty Route View
+struct EmptyRouteView: View {
+    @Binding var showingSearch: Bool
+    
+    var body: some View {
+        VStack(spacing: 20) {
+            Spacer()
+            
+            ZStack {
+                Circle()
+                    .fill(Color.blue.opacity(0.1))
+                    .frame(width: 100, height: 100)
+                Image(systemName: "figure.walk.circle.fill")
+                    .font(.system(size: 50))
+                    .foregroundStyle(.blue)
+            }
+            
+            VStack(spacing: 8) {
+                Text("Where to?")
+                    .font(.title2)
+                    .bold()
+                Text("Plan your walk and see how many\nsteps you'll take")
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+                    .multilineTextAlignment(.center)
+            }
+            
+            Spacer()
+            
+            Button(action: { showingSearch = true }) {
+                HStack {
+                    Image(systemName: "magnifyingglass")
+                    Text("Search destination")
+                    Spacer()
+                }
+                .padding()
+                .background(Color(.systemGray6))
+                .clipShape(RoundedRectangle(cornerRadius: 14))
+            }
+            .foregroundStyle(.primary)
+            .padding(.horizontal)
+            
+            Label("Long-press map to drop a pin", systemImage: "hand.tap.fill")
+                .font(.caption)
+                .foregroundStyle(.secondary)
+                .padding(.bottom, 16)
+        }
+    }
+}
+
+// MARK: - Route Active View
+struct RouteActiveView: View {
+    @ObservedObject var viewModel: ViewModel
+    var isCalculating: Bool
+    @Binding var showingSearch: Bool
+    var onDelete: (Int) -> Void
+    var onMove: (IndexSet, Int) -> Void
+    var onClearRoute: () -> Void
+    
+    var body: some View {
+        VStack(spacing: 0) {
+            // Hero Stats
+            HeroStatsView(viewModel: viewModel, isCalculating: isCalculating)
+                .padding(.horizontal, 12)
+                .padding(.bottom, 8)
+            
+            Divider()
+            
+            // Waypoints ScrollView
+            ScrollView {
+                LazyVStack(alignment: .leading, spacing: 0) {
+                    // Starting point
+                    StartingPointRow()
+                    
+                    // Waypoints
+                    ForEach(Array(viewModel.waypoints.enumerated()), id: \.offset) { index, waypoint in
+                        WaypointRowView(
+                            waypoint: waypoint,
+                            index: index,
+                            leg: index < viewModel.routeLegs.count ? viewModel.routeLegs[index] : nil,
+                            stepLength: viewModel.stepLength,
+                            isLast: index == viewModel.waypoints.count - 1,
+                            onDelete: { onDelete(index) }
+                        )
+                    }
+                }
+                .padding(.horizontal)
+                .padding(.top, 12)
+            }
+            
+            // Bottom Actions
+            BottomActionsView(
+                showingSearch: $showingSearch,
+                onClearRoute: onClearRoute
+            )
+        }
+    }
+}
+
+// MARK: - Hero Stats View
+struct HeroStatsView: View {
+    @ObservedObject var viewModel: ViewModel
+    var isCalculating: Bool
+    
+    var body: some View {
+        HStack(spacing: 0) {
+            // STEPS - Primary
+            VStack(spacing: 4) {
+                if isCalculating {
+                    ProgressView()
+                        .frame(height: 43)
+                } else if let steps = viewModel.totalSteps {
+                    Text(Formatters.formatNumber(steps))
+                        .font(.system(size: 36, weight: .bold, design: .rounded))
+                        .foregroundStyle(.primary)
+                } else {
+                    Text("--")
+                        .font(.system(size: 36, weight: .bold, design: .rounded))
+                        .foregroundStyle(.secondary)
+                }
+                Label("steps", systemImage: "figure.walk")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+            .frame(maxWidth: .infinity)
+            
+            Divider().frame(height: 50)
+            
+            // TIME - Secondary
+            VStack(spacing: 4) {
+                if isCalculating {
+                    ProgressView()
+                        .frame(height: 29)
+                } else {
+                    Text(Formatters.formatWalkingTime(viewModel.totalTime))
+                        .font(.system(size: 24, weight: .semibold, design: .rounded))
+                        .foregroundStyle(.primary)
+                }
+                Label("walking", systemImage: "clock")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+            .frame(maxWidth: .infinity)
+            
+            Divider().frame(height: 50)
+            
+            // DISTANCE - Tertiary
+            VStack(spacing: 4) {
+                if isCalculating {
+                    ProgressView()
+                        .frame(height: 22)
+                } else {
+                    Text(Formatters.formatDistance(viewModel.totalDistance))
+                        .font(.system(size: 18, weight: .medium, design: .rounded))
+                        .foregroundStyle(.secondary)
+                }
+                Label("distance", systemImage: "arrow.forward")
+                    .font(.caption)
+                    .foregroundStyle(.tertiary)
+            }
+            .frame(maxWidth: .infinity)
+        }
+        .padding(.horizontal, 12)
+        .padding(.vertical, 10)
+        .background(Color(.secondarySystemBackground))
+        .clipShape(RoundedRectangle(cornerRadius: 14))
+    }
+}
+
+// MARK: - Starting Point Row
+struct StartingPointRow: View {
+    var body: some View {
+        HStack(alignment: .center, spacing: 12) {
+            // Timeline indicator
+            VStack(spacing: 0) {
+                ZStack {
+                    Circle()
+                        .fill(Color.blue)
+                        .frame(width: 24, height: 24)
+                    Image(systemName: "location.fill")
+                        .font(.system(size: 12))
+                        .foregroundStyle(.white)
+                }
+                
+                // Connection line to next
+                Rectangle()
+                    .fill(Color.blue.opacity(0.3))
+                    .frame(width: 2, height: 24)
+            }
+            
+            VStack(alignment: .leading, spacing: 2) {
+                Text("Your Location")
+                    .font(.headline)
+                Text("Starting point")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+            
+            Spacer()
+        }
+        .padding(.vertical, 4)
+    }
+}
+
+// MARK: - Bottom Actions View
+struct BottomActionsView: View {
+    @Binding var showingSearch: Bool
+    var onClearRoute: () -> Void
+    
+    var body: some View {
+        HStack(spacing: 12) {
+            // Add Stop Button
+            Button(action: { showingSearch = true }) {
+                HStack {
+                    Image(systemName: "plus.circle.fill")
+                    Text("Add Stop")
+                }
+                .frame(maxWidth: .infinity)
+                .padding()
+                .background(Color.blue)
+                .foregroundStyle(.white)
+                .clipShape(RoundedRectangle(cornerRadius: 12))
+            }
+            
+            // Clear Route Button
+            Button(action: onClearRoute) {
+                Image(systemName: "trash.fill")
+                    .padding()
+                    .background(Color.red.opacity(0.1))
+                    .foregroundStyle(.red)
+                    .clipShape(RoundedRectangle(cornerRadius: 12))
+            }
+        }
+        .padding()
     }
 }

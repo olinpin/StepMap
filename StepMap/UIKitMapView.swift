@@ -80,17 +80,23 @@ class UIKitMapView: UIViewController, MKMapViewDelegate, CLLocationManagerDelega
     private func showRoutePlannerView() {
         routePlannerViewController.view.backgroundColor = .clear
         routePlannerViewController.modalPresentationStyle = .pageSheet
+        routePlannerViewController.isModalInPresentation = true  // Prevent dismissal
         routePlannerViewController.edgesForExtendedLayout = [.top, .bottom, .left, .right]
         if let sheet = routePlannerViewController.sheetPresentationController {
+            // Compact detent - shows grabber + stats (steps, time, distance)
+            let peekDetentId = UISheetPresentationController.Detent.Identifier("peek")
+            let peekDetent = UISheetPresentationController.Detent.custom(identifier: peekDetentId) { context in
+                return 140  // Enough for grabber + HeroStatsView
+            }
             let smallDetentId = UISheetPresentationController.Detent.Identifier("small")
             let smallDetent = UISheetPresentationController.Detent.custom(identifier: smallDetentId) { context in
-                return 300  // Increased from 200 to 300
+                return 300
             }
             let mediumDetentId = UISheetPresentationController.Detent.Identifier("medium")
             let mediumDetent = UISheetPresentationController.Detent.custom(identifier: mediumDetentId) { context in
                 return context.maximumDetentValue * 0.5
             }
-            sheet.detents = [smallDetent, mediumDetent, .large()]
+            sheet.detents = [peekDetent, smallDetent, mediumDetent, .large()]
             sheet.largestUndimmedDetentIdentifier = .large
             sheet.prefersScrollingExpandsWhenScrolledToEdge = false
             sheet.prefersGrabberVisible = true
@@ -127,9 +133,10 @@ class UIKitMapView: UIViewController, MKMapViewDelegate, CLLocationManagerDelega
                 self.mapView.addAnnotation(annotation)
             }
             
-            // Zoom to show entire route
-            if !self.viewModel.routeLegs.isEmpty {
+            // Zoom to show entire route only if requested (e.g., from search)
+            if self.viewModel.shouldZoomToRoute && !self.viewModel.routeLegs.isEmpty {
                 self.zoomToFitRoute()
+                self.viewModel.shouldZoomToRoute = false
             }
         }
     }

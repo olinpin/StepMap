@@ -19,10 +19,11 @@ struct WaypointSearchView: View {
     
     var body: some View {
         NavigationView {
-            VStack {
+            VStack(spacing: 0) {
                 // Search field
-                HStack {
+                HStack(spacing: 12) {
                     Image(systemName: "magnifyingglass")
+                        .foregroundStyle(.secondary)
                     TextField("Search for a place", text: $query)
                         .autocorrectionDisabled()
                         .onChange(of: query) {
@@ -32,35 +33,75 @@ struct WaypointSearchView: View {
                                 searchResults = []
                             }
                         }
+                    
+                    if !query.isEmpty {
+                        Button(action: { query = "" }) {
+                            Image(systemName: "xmark.circle.fill")
+                                .foregroundStyle(.secondary)
+                        }
+                    }
                 }
                 .padding()
                 .background(Color(.systemGray6))
-                .clipShape(RoundedRectangle(cornerRadius: 10))
+                .clipShape(RoundedRectangle(cornerRadius: 12))
                 .padding()
                 
+                Divider()
+                
                 // Results
-                List(searchResults, id: \.identifier) { item in
-                    Button(action: {
-                        onWaypointSelected(item)
-                    }) {
-                        HStack {
-                            Image(systemName: Defaults.getIconFor(pointOfInterest: item.pointOfInterestCategory))
-                                .foregroundStyle(Defaults.getColorFor(pointOfInterest: item.pointOfInterestCategory))
-                                .frame(width: 30)
-                            
-                            VStack(alignment: .leading) {
-                                Text(item.name ?? "Unknown")
-                                    .foregroundStyle(.primary)
-                                if let locality = item.placemark.locality {
-                                    Text(locality)
-                                        .font(.caption)
-                                        .foregroundStyle(.secondary)
-                                }
+                if searchResults.isEmpty && query.isEmpty {
+                    // Empty state
+                    VStack(spacing: 16) {
+                        Spacer()
+                        Image(systemName: "magnifyingglass")
+                            .font(.system(size: 40))
+                            .foregroundStyle(.tertiary)
+                        Text("Search for places")
+                            .font(.headline)
+                            .foregroundStyle(.secondary)
+                        Text("Find destinations, landmarks, or addresses")
+                            .font(.subheadline)
+                            .foregroundStyle(.tertiary)
+                            .multilineTextAlignment(.center)
+                        Spacer()
+                    }
+                    .padding()
+                } else if searchResults.isEmpty && !query.isEmpty {
+                    // No results
+                    VStack(spacing: 12) {
+                        Spacer()
+                        Image(systemName: "mappin.slash")
+                            .font(.system(size: 40))
+                            .foregroundStyle(.tertiary)
+                        Text("No results found")
+                            .font(.headline)
+                            .foregroundStyle(.secondary)
+                        Text("Try a different search term")
+                            .font(.subheadline)
+                            .foregroundStyle(.tertiary)
+                        Spacer()
+                    }
+                    .padding()
+                } else {
+                    // Results list
+                    ScrollView {
+                        LazyVStack(spacing: 0) {
+                            ForEach(searchResults, id: \.identifier) { item in
+                                SearchResultRow(
+                                    item: item,
+                                    userLocation: locationManager.location,
+                                    stepLength: viewModel.stepLength,
+                                    onSelect: {
+                                        onWaypointSelected(item)
+                                    }
+                                )
+                                
+                                Divider()
+                                    .padding(.leading, 54)
                             }
                         }
                     }
                 }
-                .listStyle(.plain)
             }
             .navigationTitle("Add Stop")
             .navigationBarTitleDisplayMode(.inline)
@@ -94,6 +135,97 @@ struct WaypointSearchView: View {
                 }
             }
             self.searchResults = items
+        }
+    }
+}
+
+// MARK: - Search Result Row
+struct SearchResultRow: View {
+    let item: MKMapItem
+    let userLocation: CLLocationCoordinate2D?
+    let stepLength: Double?
+    var onSelect: () -> Void
+    
+    var body: some View {
+        Button(action: onSelect) {
+            HStack(spacing: 12) {
+                // POI icon with colored background
+                ZStack {
+                    Circle()
+                        .fill(Defaults.getColorFor(pointOfInterest: item.pointOfInterestCategory).opacity(0.15))
+                        .frame(width: 42, height: 42)
+                    Image(systemName: Defaults.getIconFor(pointOfInterest: item.pointOfInterestCategory))
+                        .font(.system(size: 16, weight: .semibold))
+                        .foregroundStyle(Defaults.getColorFor(pointOfInterest: item.pointOfInterestCategory))
+                }
+                
+                // Content
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(item.name ?? "Unknown")
+                        .font(.body)
+                        .fontWeight(.medium)
+                        .foregroundStyle(.primary)
+                        .lineLimit(1)
+                    
+                    // Address
+                    if let address = formatAddress() {
+                        Text(address)
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                            .lineLimit(1)
+                    }
+                    
+                    // Step estimate
+                    if let stepsText = estimatedStepsText() {
+                        HStack(spacing: 4) {
+                            Image(systemName: "figure.walk")
+                                .font(.system(size: 10))
+                            Text(stepsText)
+                        }
+                        .font(.caption)
+                        .foregroundStyle(.green)
+                    }
+                }
+                
+                Spacer()
+                
+                // Chevron
+                Image(systemName: "chevron.right")
+                    .font(.system(size: 14, weight: .semibold))
+                    .foregroundStyle(.tertiary)
+            }
+            .padding(.horizontal, 16)
+            .padding(.vertical, 12)
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+    }
+    
+    private func formatAddress() -> String? {
+        let components = [
+            item.placemark.thoroughfare,
+            item.placemark.locality
+        ].compactMap { $0 }
+        
+        return components.isEmpty ? nil : components.joined(separator: ", ")
+    }
+    
+    private func estimatedStepsText() -> String? {
+        guard let userLocation = userLocation,
+              let itemLocation = item.placemark.location else { return nil }
+        
+        let userCLLocation = CLLocation(latitude: userLocation.latitude, longitude: userLocation.longitude)
+        let distance = userCLLocation.distance(from: itemLocation)
+        
+        // Straight-line distance, multiply by ~1.3 for walking estimate
+        let estimatedWalkingDistance = distance * 1.3
+        
+        if let stepLength = stepLength, stepLength > 0 {
+            let steps = Int(estimatedWalkingDistance / stepLength)
+            return "~\(Formatters.formatNumber(steps)) steps"
+        } else {
+            // Fallback: show distance
+            return "~\(Formatters.formatDistance(estimatedWalkingDistance))"
         }
     }
 }
