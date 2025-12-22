@@ -10,11 +10,17 @@ import MapKit
 import SwiftUI
 import Combine
 
+// Custom annotation class to store POI category
+class WaypointAnnotation: MKPointAnnotation {
+    var pointOfInterestCategory: MKPointOfInterestCategory?
+    var waypointIndex: Int = 0
+}
+
 class UIKitMapView: UIViewController, MKMapViewDelegate, CLLocationManagerDelegate, UIAdaptivePresentationControllerDelegate {
     var locationManager: LocationManager
     var viewModel: ViewModel
     var oldDirections: [MKRoute] = []
-    var waypointAnnotations: [MKPointAnnotation] = []
+    var waypointAnnotations: [WaypointAnnotation] = []
     private var cancellables = Set<AnyCancellable>()
     let routePlannerViewController: UIHostingController<RoutePlannerView>
     var annotationViewController: UIHostingController<AnnotationView>?
@@ -125,10 +131,12 @@ class UIKitMapView: UIViewController, MKMapViewDelegate, CLLocationManagerDelega
             
             // Add new waypoint annotations
             for (index, waypoint) in self.viewModel.waypoints.enumerated() {
-                let annotation = MKPointAnnotation()
+                let annotation = WaypointAnnotation()
                 annotation.coordinate = waypoint.placemark.coordinate
                 annotation.title = waypoint.name
                 annotation.subtitle = "Stop \(index + 1)"
+                annotation.pointOfInterestCategory = waypoint.pointOfInterestCategory
+                annotation.waypointIndex = index
                 self.waypointAnnotations.append(annotation)
                 self.mapView.addAnnotation(annotation)
             }
@@ -195,6 +203,46 @@ class UIKitMapView: UIViewController, MKMapViewDelegate, CLLocationManagerDelega
         return renderer
     }
     
+    func mapView(_ mapView: MKMapView, viewFor annotation: any MKAnnotation) -> MKAnnotationView? {
+        // Don't customize user location
+        if annotation is MKUserLocation {
+            return nil
+        }
+        
+        // Customize waypoint annotations
+        if let waypointAnnotation = annotation as? WaypointAnnotation {
+            let identifier = "WaypointAnnotation"
+            var annotationView = mapView.dequeueReusableAnnotationView(withIdentifier: identifier) as? MKMarkerAnnotationView
+            
+            if annotationView == nil {
+                annotationView = MKMarkerAnnotationView(annotation: annotation, reuseIdentifier: identifier)
+                annotationView?.canShowCallout = true
+            } else {
+                annotationView?.annotation = annotation
+            }
+            
+            // Set the icon and color based on POI category
+            if let category = waypointAnnotation.pointOfInterestCategory {
+                let iconName = Defaults.getIconFor(pointOfInterest: category)
+                let color = Defaults.getAppleStyleColorFor(pointOfInterest: category)
+                
+                annotationView?.glyphImage = UIImage(systemName: iconName)
+                annotationView?.glyphText = nil
+                annotationView?.markerTintColor = UIColor(color)
+            } else {
+                // For dropped pins or unknown places, show stop number
+                annotationView?.glyphText = "\(waypointAnnotation.waypointIndex + 1)"
+                annotationView?.glyphImage = nil
+                annotationView?.markerTintColor = .systemRed
+            }
+            
+            return annotationView
+        }
+        
+        // Return nil for other annotations (use default)
+        return nil
+    }
+    
     func mapView(_ mapView: MKMapView, didSelect annotation: any MKAnnotation) {
         // Don't show annotation view for waypoint annotations or user location
         if waypointAnnotations.contains(where: { $0 === annotation as AnyObject }) {
@@ -216,6 +264,13 @@ class UIKitMapView: UIViewController, MKMapViewDelegate, CLLocationManagerDelega
         viewModel.showDetails = true
         let location = CLLocation(latitude: annotation.coordinate.latitude,
                                   longitude: annotation.coordinate.longitude)
+        
+        // Extract POI category if this is a map feature annotation
+        var poiCategory: MKPointOfInterestCategory? = nil
+        if let featureAnnotation = annotation as? MKMapFeatureAnnotation {
+            poiCategory = featureAnnotation.pointOfInterestCategory
+        }
+        
         CLGeocoder().reverseGeocodeLocation(location) { [weak self] placemarks, error in
             guard let self = self, let placemark = placemarks?.first, error == nil else {
                 self?.isSelectingNewAnnotation = false
@@ -223,7 +278,7 @@ class UIKitMapView: UIViewController, MKMapViewDelegate, CLLocationManagerDelega
                 return
             }
             
-            self.annotationViewController = UIHostingController(rootView: AnnotationView(pm: placemark, title: annotation.title as? String, coordinate: location, viewModel: self.viewModel))
+            self.annotationViewController = UIHostingController(rootView: AnnotationView(pm: placemark, title: annotation.title as? String, coordinate: location, pointOfInterestCategory: poiCategory, viewModel: self.viewModel))
             if let avc = self.annotationViewController {
                 avc.view.backgroundColor = .clear
                 avc.modalPresentationStyle = .pageSheet

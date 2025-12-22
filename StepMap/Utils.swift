@@ -254,4 +254,84 @@ struct Defaults {
         }
         return pointOfInterestColors[pointOfInterest!] ?? .red
     }
+    
+    /// Returns colors that match Apple Maps style more closely
+    static func getAppleStyleColorFor(pointOfInterest: MKPointOfInterestCategory?) -> Color {
+        guard let poi = pointOfInterest else { return .red }
+        
+        // Apple Maps style color groups
+        switch poi {
+        // Food & Drink - Orange
+        case .restaurant, .bakery, .foodMarket:
+            return Color(red: 1.0, green: 0.58, blue: 0.0) // Apple Orange
+        case .cafe:
+            return Color(red: 0.6, green: 0.4, blue: 0.2) // Brown
+        case .brewery, .winery, .distillery:
+            return Color(red: 0.6, green: 0.2, blue: 0.4) // Wine/Purple-ish
+            
+        // Entertainment - Purple
+        case .nightlife, .theater, .movieTheater, .musicVenue:
+            return Color(red: 0.69, green: 0.32, blue: 0.87) // Purple
+            
+        // Parks & Nature - Green
+        case .park, .nationalPark, .campground, .beach, .zoo, .aquarium:
+            return Color(red: 0.2, green: 0.78, blue: 0.35) // Apple Green
+            
+        // Sports & Fitness - Orange/Green
+        case .fitnessCenter, .golf, .tennis, .basketball, .baseball, .soccer, .stadium, .hiking, .swimming, .skiing:
+            return Color(red: 1.0, green: 0.58, blue: 0.0) // Orange
+            
+        // Education & Culture - Brown/Orange
+        case .museum, .library, .school, .university:
+            return Color(red: 0.6, green: 0.4, blue: 0.2) // Brown
+            
+        // Landmarks & Historical - Brown
+        case .landmark, .castle, .fortress, .nationalMonument:
+            return Color(red: 0.6, green: 0.4, blue: 0.2) // Brown
+            
+        // Healthcare - Red
+        case .hospital, .pharmacy:
+            return Color(red: 1.0, green: 0.23, blue: 0.19) // Apple Red
+            
+        // Emergency Services - Blue
+        case .police, .fireStation:
+            return Color(red: 0.0, green: 0.48, blue: 1.0) // Apple Blue
+            
+        // Transit & Travel - Blue
+        case .airport, .publicTransport, .parking, .gasStation, .evCharger, .carRental:
+            return Color(red: 0.0, green: 0.48, blue: 1.0) // Apple Blue
+            
+        // Hotels & Lodging - Purple
+        case .hotel:
+            return Color(red: 0.69, green: 0.32, blue: 0.87) // Purple
+            
+        // Shopping & Services - Blue
+        case .store, .bank, .atm, .postOffice, .mailbox, .laundry:
+            return Color(red: 0.0, green: 0.48, blue: 1.0) // Apple Blue
+            
+        // Beauty & Personal Care - Pink
+        case .beauty, .spa:
+            return Color(red: 1.0, green: 0.18, blue: 0.33) // Pink
+            
+        // Automotive - Gray
+        case .automotiveRepair:
+            return Color(red: 0.56, green: 0.56, blue: 0.58) // Gray
+            
+        // Animal Services - Green
+        case .animalService:
+            return Color(red: 0.2, green: 0.78, blue: 0.35) // Green
+            
+        // Amusement - Orange
+        case .amusementPark, .fairground:
+            return Color(red: 1.0, green: 0.58, blue: 0.0) // Orange
+            
+        // Water Activities - Teal/Blue
+        case .marina, .fishing, .kayaking, .surfing:
+            return Color(red: 0.35, green: 0.78, blue: 0.98) // Teal
+            
+        // Default
+        default:
+            return Color(red: 1.0, green: 0.23, blue: 0.19) // Red
+        }
+    }
 }

@@ -12,6 +12,7 @@ struct AnnotationView: View {
     var pm: CLPlacemark
     var title: String?
     var coordinate: CLLocation
+    var pointOfInterestCategory: MKPointOfInterestCategory?
     @ObservedObject var viewModel: ViewModel
     
     @State private var distance: CLLocationDistance?
@@ -180,6 +181,7 @@ struct AnnotationView: View {
         let mkPlacemark = MKPlacemark(coordinate: coordinate.coordinate)
         let mapItem = MKMapItem(placemark: mkPlacemark)
         mapItem.name = title ?? pm.name
+        mapItem.pointOfInterestCategory = pointOfInterestCategory
         return mapItem
     }
     
