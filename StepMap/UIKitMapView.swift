@@ -18,6 +18,7 @@ class UIKitMapView: UIViewController, MKMapViewDelegate, CLLocationManagerDelega
     private var cancellables = Set<AnyCancellable>()
     let routePlannerViewController: UIHostingController<RoutePlannerView>
     var annotationViewController: UIHostingController<AnnotationView>?
+    private var isSelectingNewAnnotation = false  // Flag to prevent route planner showing during annotation switch
     let mapView : MKMapView = {
         let map = MKMapView()
         map.showsUserTrackingButton = true
@@ -188,10 +189,16 @@ class UIKitMapView: UIViewController, MKMapViewDelegate, CLLocationManagerDelega
     }
     
     func mapView(_ mapView: MKMapView, didSelect annotation: any MKAnnotation) {
-        // Don't show annotation view for waypoint annotations
+        // Don't show annotation view for waypoint annotations or user location
         if waypointAnnotations.contains(where: { $0 === annotation as AnyObject }) {
             return
         }
+        if annotation is MKUserLocation {
+            return
+        }
+        
+        // Set flag to prevent route planner from showing during annotation switch
+        isSelectingNewAnnotation = true
         
         hideRoutePlannerView()
         hideAnnotationView()
@@ -202,8 +209,11 @@ class UIKitMapView: UIViewController, MKMapViewDelegate, CLLocationManagerDelega
         viewModel.showDetails = true
         let location = CLLocation(latitude: annotation.coordinate.latitude,
                                   longitude: annotation.coordinate.longitude)
-        CLGeocoder().reverseGeocodeLocation(location) { placemarks, error in
-            guard let placemark = placemarks?.first, error == nil else { return }
+        CLGeocoder().reverseGeocodeLocation(location) { [weak self] placemarks, error in
+            guard let self = self, let placemark = placemarks?.first, error == nil else {
+                self?.isSelectingNewAnnotation = false
+                return
+            }
             
             self.annotationViewController = UIHostingController(rootView: AnnotationView(pm: placemark, title: annotation.title as? String, coordinate: location, viewModel: self.viewModel))
             if let avc = self.annotationViewController {
@@ -222,15 +232,30 @@ class UIKitMapView: UIViewController, MKMapViewDelegate, CLLocationManagerDelega
                     sheet.prefersEdgeAttachedInCompactHeight = true
                     sheet.widthFollowsPreferredContentSizeWhenEdgeAttached = true
                 }
-                self.present(avc, animated: true, completion: nil)
+                self.present(avc, animated: true) {
+                    // Clear the flag after presentation is complete
+                    self.isSelectingNewAnnotation = false
+                }
+            } else {
+                self.isSelectingNewAnnotation = false
             }
         }
-
     }
     
     func mapView(_ mapView: MKMapView, didDeselect annotation: any MKAnnotation) {
+        // Don't trigger route planner if we're selecting a new annotation
+        if isSelectingNewAnnotation {
+            return
+        }
+        
         if viewModel.showDetails {
             viewModel.showDetails = false
+        }
+    }
+    
+    func deselectAllAnnotations() {
+        for annotation in mapView.selectedAnnotations {
+            mapView.deselectAnnotation(annotation, animated: true)
         }
     }
     
@@ -251,13 +276,25 @@ class UIKitMapView: UIViewController, MKMapViewDelegate, CLLocationManagerDelega
                 self?.refreshRoute()
             }
             .store(in: &cancellables)
+        
+        // Watch for waypoints being cleared to deselect annotations
+        viewModel.$waypoints
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] waypoints in
+                if waypoints.isEmpty {
+                    self?.deselectAllAnnotations()
+                }
+            }
+            .store(in: &cancellables)
+        
         viewModel.$showDetails
             .receive(on: DispatchQueue.main)
             .sink { [weak self] value in
-                print(value)
-                if !value {
-                    self?.hideAnnotationView()
-                    self?.showRoutePlannerView()
+                guard let self = self else { return }
+                // Don't show route planner if we're in the middle of selecting a new annotation
+                if !value && !self.isSelectingNewAnnotation {
+                    self.hideAnnotationView()
+                    self.showRoutePlannerView()
                 }
             }
             .store(in: &cancellables)
