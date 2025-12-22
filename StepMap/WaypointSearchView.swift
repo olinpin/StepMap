@@ -16,6 +16,7 @@ struct WaypointSearchView: View {
     @State private var query: String = ""
     @State private var searchResults: [MKMapItem] = []
     @Environment(\.dismiss) private var dismiss
+    @FocusState private var isSearchFocused: Bool
     
     var body: some View {
         NavigationView {
@@ -26,6 +27,7 @@ struct WaypointSearchView: View {
                         .foregroundStyle(.secondary)
                     TextField("Search for a place", text: $query)
                         .autocorrectionDisabled()
+                        .focused($isSearchFocused)
                         .onChange(of: query) {
                             if query.count > 0 {
                                 search(for: query)
@@ -45,6 +47,9 @@ struct WaypointSearchView: View {
                 .background(Color(.systemGray6))
                 .clipShape(RoundedRectangle(cornerRadius: 12))
                 .padding()
+                .onAppear {
+                    isSearchFocused = true
+                }
                 
                 Divider()
                 

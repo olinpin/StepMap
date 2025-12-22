@@ -10,7 +10,7 @@ import MapKit
 import SwiftUI
 import Combine
 
-class UIKitMapView: UIViewController, MKMapViewDelegate, CLLocationManagerDelegate {
+class UIKitMapView: UIViewController, MKMapViewDelegate, CLLocationManagerDelegate, UIAdaptivePresentationControllerDelegate {
     var locationManager: LocationManager
     var viewModel: ViewModel
     var oldDirections: [MKRoute] = []
@@ -219,6 +219,7 @@ class UIKitMapView: UIViewController, MKMapViewDelegate, CLLocationManagerDelega
         CLGeocoder().reverseGeocodeLocation(location) { [weak self] placemarks, error in
             guard let self = self, let placemark = placemarks?.first, error == nil else {
                 self?.isSelectingNewAnnotation = false
+                self?.viewModel.showDetails = false
                 return
             }
             
@@ -227,6 +228,10 @@ class UIKitMapView: UIViewController, MKMapViewDelegate, CLLocationManagerDelega
                 avc.view.backgroundColor = .clear
                 avc.modalPresentationStyle = .pageSheet
                 avc.edgesForExtendedLayout = [.top, .bottom, .left, .right]
+                
+                // Set delegate to detect when sheet is dismissed by dragging
+                avc.presentationController?.delegate = self
+                
                 if let sheet = avc.sheetPresentationController {
                     let smallDetentId = UISheetPresentationController.Detent.Identifier("small")
                     let smallDetent = UISheetPresentationController.Detent.custom(identifier: smallDetentId) { context in
@@ -276,6 +281,16 @@ class UIKitMapView: UIViewController, MKMapViewDelegate, CLLocationManagerDelega
         }
     }
     
+    // MARK: - UIAdaptivePresentationControllerDelegate
+    
+    func presentationControllerDidDismiss(_ presentationController: UIPresentationController) {
+        // Called when annotation sheet is dismissed by dragging down
+        if presentationController.presentedViewController === annotationViewController {
+            viewModel.showDetails = false
+            deselectAllAnnotations()
+        }
+    }
+    
     private func bindViewModel() {
         viewModel.$routeLegs
             .receive(on: DispatchQueue.main)
@@ -301,6 +316,7 @@ class UIKitMapView: UIViewController, MKMapViewDelegate, CLLocationManagerDelega
                 // Don't show route planner if we're in the middle of selecting a new annotation
                 if !value && !self.isSelectingNewAnnotation {
                     self.hideAnnotationView()
+                    self.deselectAllAnnotations()
                     self.showRoutePlannerView()
                 }
             }

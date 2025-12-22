@@ -84,47 +84,23 @@ struct EmptyRouteView: View {
     @Binding var showingSearch: Bool
     
     var body: some View {
-        VStack(spacing: 20) {
-            Spacer()
-            
-            ZStack {
-                Circle()
-                    .fill(Color.blue.opacity(0.1))
-                    .frame(width: 100, height: 100)
-                Image(systemName: "figure.walk.circle.fill")
-                    .font(.system(size: 50))
-                    .foregroundStyle(.blue)
-            }
-            
-            VStack(spacing: 8) {
-                Text("Where to?")
-                    .font(.title2)
-                    .bold()
-                Text("Plan your walk and see how many\nsteps you'll take")
-                    .font(.subheadline)
-                    .foregroundStyle(.secondary)
-                    .multilineTextAlignment(.center)
-            }
-            
-            Spacer()
-            
+        VStack(spacing: 0) {
             Button(action: { showingSearch = true }) {
-                HStack {
+                HStack(spacing: 10) {
                     Image(systemName: "magnifyingglass")
+                        .foregroundStyle(.secondary)
                     Text("Search destination")
+                        .foregroundStyle(.secondary)
                     Spacer()
                 }
-                .padding()
-                .background(Color(.systemGray6))
-                .clipShape(RoundedRectangle(cornerRadius: 14))
+                .padding(.horizontal, 12)
+                .padding(.vertical, 10)
+                .background(Color(.systemGray5))
+                .clipShape(RoundedRectangle(cornerRadius: 10))
             }
-            .foregroundStyle(.primary)
-            .padding(.horizontal)
+            .padding(.horizontal, 12)
             
-            Label("Long-press map to drop a pin", systemImage: "hand.tap.fill")
-                .font(.caption)
-                .foregroundStyle(.secondary)
-                .padding(.bottom, 16)
+            Spacer()
         }
     }
 }

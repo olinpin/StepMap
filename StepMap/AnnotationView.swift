@@ -18,6 +18,7 @@ struct AnnotationView: View {
     @State private var localDirections: [MKRoute] = []
     @State private var isLoadingRoute = false
     @State private var showDetails = false
+    @State private var shouldSetAsDestination = false
     
     private var displayTitle: String {
         title ?? pm.areasOfInterest?.first ?? pm.name ?? "\(coordinate.coordinate.latitude.description)º, \(coordinate.coordinate.longitude.description)"
@@ -202,6 +203,7 @@ struct AnnotationView: View {
     private func setAsDestination() {
         if localDirections.isEmpty {
             isLoadingRoute = true
+            shouldSetAsDestination = true
             findDirections()
         } else {
             viewModel.clearRoute()
@@ -247,6 +249,16 @@ struct AnnotationView: View {
             self.localDirections = response.routes
             if let route = response.routes.first {
                 self.distance = route.distance
+            }
+            
+            // If user tapped "Go Here" and we were waiting for directions
+            if self.shouldSetAsDestination && !response.routes.isEmpty {
+                self.shouldSetAsDestination = false
+                viewModel.clearRoute()
+                let mapItem = createMapItem()
+                viewModel.addWaypoint(mapItem)
+                viewModel.routeLegs = response.routes
+                viewModel.showDetails = false
             }
         }
     }
