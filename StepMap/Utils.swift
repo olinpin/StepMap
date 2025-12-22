@@ -9,6 +9,37 @@ import Foundation
 import MapKit
 import SwiftUI
 
+// MARK: - Formatters
+struct Formatters {
+    /// Formats seconds into "X min" or "X hr Y min"
+    static func formatWalkingTime(_ seconds: TimeInterval) -> String {
+        if seconds < 60 { return "< 1 min" }
+        let hours = Int(seconds) / 3600
+        let minutes = (Int(seconds) % 3600) / 60
+        if hours > 0 {
+            return minutes > 0 ? "\(hours) hr \(minutes) min" : "\(hours) hr"
+        }
+        return "\(minutes) min"
+    }
+    
+    /// Formats distance in meters to km or m
+    static func formatDistance(_ meters: CLLocationDistance) -> String {
+        if meters >= 1000 {
+            return String(format: "%.1f km", meters / 1000)
+        }
+        return String(format: "%.0f m", meters)
+    }
+    
+    /// Formats number with thousands separator
+    static func formatNumber(_ number: Int) -> String {
+        let formatter = NumberFormatter()
+        formatter.numberStyle = .decimal
+        formatter.maximumFractionDigits = 0
+        return formatter.string(from: NSNumber(value: number)) ?? "\(number)"
+    }
+}
+
+// MARK: - Defaults
 struct Defaults {
     static let routeColor: [UIColor] = [
         .blue,

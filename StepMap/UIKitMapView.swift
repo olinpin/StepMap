@@ -14,9 +14,9 @@ class UIKitMapView: UIViewController, MKMapViewDelegate, CLLocationManagerDelega
     var locationManager: LocationManager
     var viewModel: ViewModel
     var oldDirections: [MKRoute] = []
-    var oldDestination: MKMapItemAnnotation?
+    var waypointAnnotations: [MKPointAnnotation] = []
     private var cancellables = Set<AnyCancellable>()
-    let searchViewConctroller: UIHostingController<SearchView>
+    let routePlannerViewController: UIHostingController<RoutePlannerView>
     var annotationViewController: UIHostingController<AnnotationView>?
     let mapView : MKMapView = {
         let map = MKMapView()
@@ -31,7 +31,7 @@ class UIKitMapView: UIViewController, MKMapViewDelegate, CLLocationManagerDelega
     init(locationManager: LocationManager, viewModel: ViewModel) {
         self.locationManager = locationManager
         self.viewModel = viewModel
-        self.searchViewConctroller = UIHostingController(rootView: SearchView(locationManager: locationManager, viewModel: viewModel))
+        self.routePlannerViewController = UIHostingController(rootView: RoutePlannerView(viewModel: viewModel, locationManager: locationManager))
         super.init(nibName: nil, bundle: nil)
     }
     
@@ -46,10 +46,15 @@ class UIKitMapView: UIViewController, MKMapViewDelegate, CLLocationManagerDelega
         mapView.delegate = self
         setMapConstraints()
         setLocation()
+        
+        // Add long-press gesture for adding waypoints
+        let longPress = UILongPressGestureRecognizer(target: self, action: #selector(handleLongPress(_:)))
+        longPress.minimumPressDuration = 0.5
+        mapView.addGestureRecognizer(longPress)
     }
     
     override func viewDidAppear(_ animated: Bool) {
-        showSearchView()
+        showRoutePlannerView()
     }
     
     private func setLocation() {
@@ -71,41 +76,105 @@ class UIKitMapView: UIViewController, MKMapViewDelegate, CLLocationManagerDelega
         mapView.trailingAnchor.constraint(equalTo: self.view.trailingAnchor).isActive = true
     }
     
-    private func showSearchView() {
-        searchViewConctroller.view.backgroundColor = .clear
-        searchViewConctroller.modalPresentationStyle = .pageSheet
-        searchViewConctroller.edgesForExtendedLayout = [.top, .bottom, .left, .right]
-        if let sheet = searchViewConctroller.sheetPresentationController {
+    private func showRoutePlannerView() {
+        routePlannerViewController.view.backgroundColor = .clear
+        routePlannerViewController.modalPresentationStyle = .pageSheet
+        routePlannerViewController.edgesForExtendedLayout = [.top, .bottom, .left, .right]
+        if let sheet = routePlannerViewController.sheetPresentationController {
             let smallDetentId = UISheetPresentationController.Detent.Identifier("small")
             let smallDetent = UISheetPresentationController.Detent.custom(identifier: smallDetentId) { context in
-                return 200
+                return 300  // Increased from 200 to 300
             }
-            sheet.detents = [smallDetent, .large()]
+            let mediumDetentId = UISheetPresentationController.Detent.Identifier("medium")
+            let mediumDetent = UISheetPresentationController.Detent.custom(identifier: mediumDetentId) { context in
+                return context.maximumDetentValue * 0.5
+            }
+            sheet.detents = [smallDetent, mediumDetent, .large()]
             sheet.largestUndimmedDetentIdentifier = .large
             sheet.prefersScrollingExpandsWhenScrolledToEdge = false
             sheet.prefersGrabberVisible = true
             sheet.prefersEdgeAttachedInCompactHeight = true
             sheet.widthFollowsPreferredContentSizeWhenEdgeAttached = true
         }
-        self.present(searchViewConctroller, animated: true, completion: nil)
+        self.present(routePlannerViewController, animated: true, completion: nil)
     }
     
     private func refreshRoute() {
         DispatchQueue.main.async {
+            // Remove old routes
             for route in self.oldDirections {
                 self.mapView.removeOverlay(route.polyline)
             }
-            self.oldDirections = self.viewModel.directions
-            for route in self.viewModel.directions {
+            
+            // Add new routes
+            self.oldDirections = self.viewModel.routeLegs
+            for route in self.viewModel.routeLegs {
                 self.mapView.addOverlay(route.polyline, level: .aboveRoads)
             }
             
-            if let destination = self.oldDestination {
-                self.mapView.removeAnnotation(destination)
+            // Remove old waypoint annotations
+            self.mapView.removeAnnotations(self.waypointAnnotations)
+            self.waypointAnnotations.removeAll()
+            
+            // Add new waypoint annotations
+            for (index, waypoint) in self.viewModel.waypoints.enumerated() {
+                let annotation = MKPointAnnotation()
+                annotation.coordinate = waypoint.placemark.coordinate
+                annotation.title = waypoint.name
+                annotation.subtitle = "Stop \(index + 1)"
+                self.waypointAnnotations.append(annotation)
+                self.mapView.addAnnotation(annotation)
             }
-            if let destination = self.viewModel.destination {
-                self.oldDestination = MKMapItemAnnotation(mapItem: destination)
-                self.mapView.addAnnotation(self.oldDestination!)
+            
+            // Zoom to show entire route
+            if !self.viewModel.routeLegs.isEmpty {
+                self.zoomToFitRoute()
+            }
+        }
+    }
+    
+    private func zoomToFitRoute() {
+        guard !viewModel.routeLegs.isEmpty else { return }
+        
+        var mapRect = MKMapRect.null
+        for route in viewModel.routeLegs {
+            mapRect = mapRect.union(route.polyline.boundingMapRect)
+        }
+        
+        let padding = UIEdgeInsets(top: 50, left: 50, bottom: 300, right: 50)
+        mapView.setVisibleMapRect(mapRect, edgePadding: padding, animated: true)
+    }
+    
+    // MARK: - Long Press Gesture Handler
+    @objc func handleLongPress(_ gesture: UILongPressGestureRecognizer) {
+        guard gesture.state == .began else { return }
+        
+        let point = gesture.location(in: mapView)
+        let coordinate = mapView.convert(point, toCoordinateFrom: mapView)
+        
+        // Reverse geocode to get place info
+        let location = CLLocation(latitude: coordinate.latitude, longitude: coordinate.longitude)
+        CLGeocoder().reverseGeocodeLocation(location) { [weak self] placemarks, error in
+            guard let self = self, let placemark = placemarks?.first else { return }
+            
+            let mkPlacemark = MKPlacemark(placemark: placemark)
+            let mapItem = MKMapItem(placemark: mkPlacemark)
+            mapItem.name = placemark.name ?? "Dropped Pin"
+            
+            // Add to waypoints and recalculate
+            self.viewModel.addWaypoint(mapItem)
+            self.recalculateRoute()
+        }
+    }
+    
+    private func recalculateRoute() {
+        Task {
+            let routes = await RouteService.calculateRoute(
+                from: locationManager.location,
+                waypoints: viewModel.waypoints
+            )
+            await MainActor.run {
+                viewModel.routeLegs = routes
             }
         }
     }
@@ -119,7 +188,12 @@ class UIKitMapView: UIViewController, MKMapViewDelegate, CLLocationManagerDelega
     }
     
     func mapView(_ mapView: MKMapView, didSelect annotation: any MKAnnotation) {
-        hideSearchView()
+        // Don't show annotation view for waypoint annotations
+        if waypointAnnotations.contains(where: { $0 === annotation as AnyObject }) {
+            return
+        }
+        
+        hideRoutePlannerView()
         hideAnnotationView()
         showAnnotation(annotation: annotation)
     }
@@ -160,9 +234,10 @@ class UIKitMapView: UIViewController, MKMapViewDelegate, CLLocationManagerDelega
         }
     }
     
-    func hideSearchView() {
-        searchViewConctroller.dismiss(animated: true)
+    func hideRoutePlannerView() {
+        routePlannerViewController.dismiss(animated: true)
     }
+    
     func hideAnnotationView() {
         if let avc = self.annotationViewController {
             avc.dismiss(animated: true)
@@ -170,7 +245,7 @@ class UIKitMapView: UIViewController, MKMapViewDelegate, CLLocationManagerDelega
     }
     
     private func bindViewModel() {
-        viewModel.$directions
+        viewModel.$routeLegs
             .receive(on: DispatchQueue.main)
             .sink { [weak self] _ in
                 self?.refreshRoute()
@@ -182,8 +257,7 @@ class UIKitMapView: UIViewController, MKMapViewDelegate, CLLocationManagerDelega
                 print(value)
                 if !value {
                     self?.hideAnnotationView()
-                    self?.showSearchView()
-//                    self?.mapView.selectedAnnotations = []
+                    self?.showRoutePlannerView()
                 }
             }
             .store(in: &cancellables)

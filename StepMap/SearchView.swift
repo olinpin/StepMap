@@ -32,10 +32,6 @@ struct SearchView: View {
                                 self.locations = []
                             }
                         }
-                    //                                        .onAppear {
-                    //                                            // TODO: delete this, it's for debug only
-                    //                                            search(for: self.query)
-                    //                                        }
                         .overlay {
                             HStack {
                                 Spacer()
@@ -43,8 +39,7 @@ struct SearchView: View {
                                     .foregroundStyle(.gray)
                                     .onTapGesture {
                                         query = ""
-                                        viewModel.destination = nil
-                                        viewModel.directions = []
+                                        viewModel.clearRoute()
                                     }
                             }
                         }
@@ -80,13 +75,13 @@ struct SearchView: View {
         let search = MKLocalSearch(request: searchRequest)
         search.start { (response, error) in
             guard let response = response else {
-                print(error)
+                print(error ?? "Unknown search error")
                 return
             }
             var items: [MKMapItem] = []
             for item in response.mapItems {
-                if let name = item.name,
-                    let location = item.placemark.location
+                if let _ = item.name,
+                    let _ = item.placemark.location
                 {
                     items.append(item)
                 }
@@ -120,9 +115,3 @@ struct TextFieldGrayBackgroudColor: ViewModifier {
             .foregroundStyle(.primary)
     }
 }
-
-//#Preview {
-//    @Previewable @State var directions: [MKRoute] = []
-//    @Previewable @State var displayRoute: Bool = false
-//    return SearchView(directions: $directions, $disp)
-//}

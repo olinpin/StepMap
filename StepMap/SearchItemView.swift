@@ -24,8 +24,12 @@ struct SearchItemView: View {
                 if localDirections == [] {
                     print("finding directions")
                     findDirections()
+                } else {
+                    // Clear existing route and set this as only destination
+                    viewModel.clearRoute()
+                    viewModel.addWaypoint(location)
+                    viewModel.routeLegs = localDirections
                 }
-                viewModel.directions = localDirections
                 print("Directions set")
             },
             label: {
@@ -80,9 +84,6 @@ struct SearchItemView: View {
             }
         )
         .frame(height: 100)
-        //        .onAppear {
-        //            findDirections()
-        //        }
     }
 
     func formatDistance(distance: CLLocationDistance) -> String {
@@ -93,7 +94,6 @@ struct SearchItemView: View {
             formatter.numberStyle = .decimal
             let number = NSNumber(value: steps)
             return formatter.string(from: number)! + " steps"
-            //            return String(format: "%.0f", steps)
         }
         let distanceFormatter = MKDistanceFormatter()
         return distanceFormatter.string(fromDistance: distance)
@@ -102,12 +102,9 @@ struct SearchItemView: View {
     func findDirections() {
         let directionsRequest = MKDirections.Request()
         directionsRequest.source = MKMapItem.forCurrentLocation()
-        //                directionsRequest.source = MKMapItem.init(
-        //                    placemark: MKPlacemark(
-        //                        coordinate: CLLocationCoordinate2D(latitude: 52.3676, longitude: 4.9041)))
         directionsRequest.destination = location
         directionsRequest.transportType = .walking
-        directionsRequest.requestsAlternateRoutes = false  // TODO: make alternative routes available
+        directionsRequest.requestsAlternateRoutes = false
         directionsRequest.departureDate = .now
 
         let searchDirections = MKDirections(request: directionsRequest)
@@ -118,7 +115,11 @@ struct SearchItemView: View {
             }
             self.localDirections = response.routes
             self.distance = response.routes.first?.distance
-            viewModel.destination = location
+            
+            // Clear existing route and set this as only destination
+            viewModel.clearRoute()
+            viewModel.addWaypoint(location)
+            viewModel.routeLegs = response.routes
         }
     }
 }
