@@ -66,6 +66,16 @@ struct SearchView: View {
     func search(for text: String) {
         let searchRequest = MKLocalSearch.Request()
         searchRequest.naturalLanguageQuery = text
+        
+        // Bias search results to the user's current location
+        if let userCoordinate = locationManager.location {
+            let region = MKCoordinateRegion(
+                center: userCoordinate,
+                latitudinalMeters: 50000,  // Search within 50km radius
+                longitudinalMeters: 50000
+            )
+            searchRequest.region = region
+        }
 
         let search = MKLocalSearch(request: searchRequest)
         search.start { (response, error) in
@@ -81,6 +91,21 @@ struct SearchView: View {
                     items.append(item)
                 }
             }
+            
+            // Sort results by distance from user's current location
+            if let userCoordinate = locationManager.location {
+                let userLocation = CLLocation(latitude: userCoordinate.latitude, longitude: userCoordinate.longitude)
+                items.sort { item1, item2 in
+                    guard let loc1 = item1.placemark.location,
+                          let loc2 = item2.placemark.location else {
+                        return false
+                    }
+                    let distance1 = userLocation.distance(from: loc1)
+                    let distance2 = userLocation.distance(from: loc2)
+                    return distance1 < distance2
+                }
+            }
+            
             self.locations = items
         }
     }
