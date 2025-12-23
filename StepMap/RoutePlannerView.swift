@@ -13,6 +13,7 @@ struct RoutePlannerView: View {
     var locationManager: LocationManager
     @State private var showingSearch = false
     @State private var isCalculating = false
+    @State private var showingHealthInfo = false
     
     var body: some View {
         ZStack {
@@ -21,12 +22,18 @@ struct RoutePlannerView: View {
                 .ignoresSafeArea()
             
             VStack(spacing: 0) {
-                // Drag indicator
-                Capsule()
-                    .fill(Color(.systemGray4))
-                    .frame(width: 36, height: 5)
-                    .padding(.top, 6)
-                    .padding(.bottom, 8)
+                // Health info button
+                HStack {
+                    Spacer()
+                    Button(action: { showingHealthInfo = true }) {
+                        Image(systemName: "heart.text.square")
+                            .font(.title3)
+                            .foregroundStyle(.secondary)
+                    }
+                    .padding(.trailing, 12)
+                }
+                .padding(.top, 6)
+                .padding(.bottom, 8)
                 
                 if viewModel.waypoints.isEmpty {
                     EmptyRouteView(showingSearch: $showingSearch)
@@ -61,6 +68,9 @@ struct RoutePlannerView: View {
                     recalculateRoute()
                 }
             )
+        }
+        .sheet(isPresented: $showingHealthInfo) {
+            HealthInfoView(viewModel: viewModel)
         }
     }
     

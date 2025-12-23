@@ -59,6 +59,20 @@ struct Formatters {
         guard let stepLength = stepLength, stepLength > 0 else { return nil }
         return Int(distance / stepLength)
     }
+    
+    /// Formats step length in centimeters
+    static func formatStepLength(_ meters: Double?) -> String {
+        guard let meters = meters else { return "--" }
+        let cm = meters * 100
+        return String(format: "%.1f cm", cm)
+    }
+    
+    /// Formats walking speed in km/h
+    static func formatWalkingSpeed(_ metersPerSecond: Double?) -> String {
+        guard let mps = metersPerSecond else { return "--" }
+        let kmh = mps * 3.6
+        return String(format: "%.1f km/h", kmh)
+    }
 }
 
 // MARK: - Defaults

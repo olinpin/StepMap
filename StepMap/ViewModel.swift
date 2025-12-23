@@ -11,6 +11,7 @@ import MapKit
 class ViewModel: ObservableObject {
     @Published var test: String = UserDefaults.standard.string(forKey: "test") ?? ""
     @Published var stepLength: Double?
+    @Published var walkingSpeed: Double?
     @Published var showDetails = false
     
     // MARK: - Waypoint-based routing

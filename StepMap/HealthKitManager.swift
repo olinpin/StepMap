@@ -17,6 +17,7 @@ class HealthKitManager: ObservableObject {
     ]
 
     var stepLength: Double?
+    var walkingSpeed: Double?
     
     var stepCount: Int?
 
@@ -50,6 +51,26 @@ class HealthKitManager: ObservableObject {
             fatalError(
                 "Something went wrong while getting step length from healthKit: \(error.localizedDescription)"
             )
+        }
+    }
+    
+    func getWalkingSpeed() async -> Double? {
+        if walkingSpeed != nil {
+            return walkingSpeed
+        }
+        let walkingSpeedType = HKQuantityType(.walkingSpeed)
+        
+        let query = HKStatisticsQueryDescriptor(
+            predicate: HKSamplePredicate.quantitySample(type: walkingSpeedType),
+            options: .discreteAverage)
+        
+        do {
+            let results = try await query.result(for: healthStore)
+            walkingSpeed = results?.averageQuantity()?.doubleValue(for: HKUnit.meter().unitDivided(by: HKUnit.second()))
+            return walkingSpeed
+        } catch {
+            print("Error getting walking speed: \(error.localizedDescription)")
+            return nil
         }
     }
     
