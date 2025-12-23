@@ -33,19 +33,109 @@ struct HealthInfoView: View {
                     // Step Length Card
                     HealthStatCard(
                         title: "Step Length",
-                        value: Formatters.formatStepLength(viewModel.stepLength),
+                        value: Formatters.formatStepLength(viewModel.effectiveStepLength),
                         icon: "ruler",
-                        description: "Average length of your walking step"
+                        description: viewModel.stepLengthOverride != nil 
+                            ? "Manually adjusted" 
+                            : (viewModel.stepLengthSource?.rawValue ?? "From Apple Health")
                     )
+                    .padding(.horizontal)
+                    
+                    // Step Length Adjustment Slider
+                    VStack(alignment: .leading, spacing: 12) {
+                        HStack {
+                            Text("Adjust Step Length")
+                                .font(.subheadline.bold())
+                            Spacer()
+                            if viewModel.stepLengthOverride != nil {
+                                Button("Reset") {
+                                    viewModel.stepLengthOverride = nil
+                                }
+                                .font(.caption)
+                                .foregroundStyle(.blue)
+                            }
+                        }
+                        
+                        let currentValue = viewModel.effectiveStepLength ?? 0.7
+                        Slider(
+                            value: Binding(
+                                get: { currentValue * 100 },  // Convert to cm
+                                set: { viewModel.stepLengthOverride = $0 / 100 }  // Convert back to meters
+                            ),
+                            in: 40...100,  // 40-100 cm range
+                            step: 1
+                        )
+                        
+                        HStack {
+                            Text("40 cm")
+                                .font(.caption2)
+                                .foregroundStyle(.tertiary)
+                            Spacer()
+                            Text(Formatters.formatStepLength(viewModel.effectiveStepLength))
+                                .font(.caption.bold())
+                            Spacer()
+                            Text("100 cm")
+                                .font(.caption2)
+                                .foregroundStyle(.tertiary)
+                        }
+                    }
+                    .padding()
+                    .background(Color(.secondarySystemBackground))
+                    .clipShape(RoundedRectangle(cornerRadius: 14))
                     .padding(.horizontal)
                     
                     // Walking Speed Card
                     HealthStatCard(
                         title: "Walking Speed",
-                        value: Formatters.formatWalkingSpeed(viewModel.walkingSpeed),
+                        value: Formatters.formatWalkingSpeed(viewModel.effectiveWalkingSpeed),
                         icon: "figure.walk",
-                        description: "Your average walking pace"
+                        description: viewModel.walkingSpeedOverride != nil 
+                            ? "Manually adjusted" 
+                            : (viewModel.walkingSpeedSource?.rawValue ?? "From Apple Health")
                     )
+                    .padding(.horizontal)
+                    
+                    // Walking Speed Adjustment Slider
+                    VStack(alignment: .leading, spacing: 12) {
+                        HStack {
+                            Text("Adjust Walking Speed")
+                                .font(.subheadline.bold())
+                            Spacer()
+                            if viewModel.walkingSpeedOverride != nil {
+                                Button("Reset") {
+                                    viewModel.walkingSpeedOverride = nil
+                                }
+                                .font(.caption)
+                                .foregroundStyle(.blue)
+                            }
+                        }
+                        
+                        let currentSpeed = viewModel.effectiveWalkingSpeed ?? 1.4  // Default ~5 km/h
+                        Slider(
+                            value: Binding(
+                                get: { currentSpeed * 3.6 },  // Convert m/s to km/h
+                                set: { viewModel.walkingSpeedOverride = $0 / 3.6 }  // Convert back to m/s
+                            ),
+                            in: 2...8,  // 2-8 km/h range
+                            step: 0.1
+                        )
+                        
+                        HStack {
+                            Text("2 km/h")
+                                .font(.caption2)
+                                .foregroundStyle(.tertiary)
+                            Spacer()
+                            Text(Formatters.formatWalkingSpeed(viewModel.effectiveWalkingSpeed))
+                                .font(.caption.bold())
+                            Spacer()
+                            Text("8 km/h")
+                                .font(.caption2)
+                                .foregroundStyle(.tertiary)
+                        }
+                    }
+                    .padding()
+                    .background(Color(.secondarySystemBackground))
+                    .clipShape(RoundedRectangle(cornerRadius: 14))
                     .padding(.horizontal)
                     
                     // Info Section

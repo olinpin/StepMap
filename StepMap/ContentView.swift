@@ -40,7 +40,11 @@ struct ContentView: View {
                 Task {
                     await healthKitManager.requestAccess()
                     viewModel.stepLength = await healthKitManager.getStepLength()
+                    viewModel.healthKitStepLength = viewModel.stepLength
+                    viewModel.stepLengthSource = healthKitManager.stepLengthSource
                     viewModel.walkingSpeed = await healthKitManager.getWalkingSpeed()
+                    viewModel.healthKitWalkingSpeed = viewModel.walkingSpeed
+                    viewModel.walkingSpeedSource = healthKitManager.walkingSpeedSource
                 }
             }
     }

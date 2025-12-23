@@ -14,6 +14,42 @@ class ViewModel: ObservableObject {
     @Published var walkingSpeed: Double?
     @Published var showDetails = false
     
+    // MARK: - Step Length Override
+    @Published var stepLengthSource: StepLengthSource?
+    @Published var stepLengthOverride: Double? {
+        didSet {
+            if let override = stepLengthOverride {
+                UserDefaults.standard.set(override, forKey: "stepLengthOverride")
+            } else {
+                UserDefaults.standard.removeObject(forKey: "stepLengthOverride")
+            }
+        }
+    }
+    @Published var healthKitStepLength: Double?  // Store original HealthKit value
+    
+    // Computed property for effective step length
+    var effectiveStepLength: Double? {
+        return stepLengthOverride ?? stepLength
+    }
+    
+    // MARK: - Walking Speed Override
+    @Published var walkingSpeedSource: WalkingSpeedSource?
+    @Published var walkingSpeedOverride: Double? {
+        didSet {
+            if let override = walkingSpeedOverride {
+                UserDefaults.standard.set(override, forKey: "walkingSpeedOverride")
+            } else {
+                UserDefaults.standard.removeObject(forKey: "walkingSpeedOverride")
+            }
+        }
+    }
+    @Published var healthKitWalkingSpeed: Double?  // Store original HealthKit value
+    
+    // Computed property for effective walking speed
+    var effectiveWalkingSpeed: Double? {
+        return walkingSpeedOverride ?? walkingSpeed
+    }
+    
     // MARK: - Waypoint-based routing
     @Published var waypoints: [MKMapItem] = []  // Ordered list of stops
     @Published var routeLegs: [MKRoute] = []    // Route between each waypoint pair
@@ -39,8 +75,18 @@ class ViewModel: ObservableObject {
     }
     
     var totalSteps: Int? {
-        guard let stepLength = stepLength, stepLength > 0 else { return nil }
+        guard let stepLength = effectiveStepLength, stepLength > 0 else { return nil }
         return Int(totalDistance / stepLength)
+    }
+    
+    // MARK: - Initializer
+    init() {
+        if UserDefaults.standard.object(forKey: "stepLengthOverride") != nil {
+            stepLengthOverride = UserDefaults.standard.double(forKey: "stepLengthOverride")
+        }
+        if UserDefaults.standard.object(forKey: "walkingSpeedOverride") != nil {
+            walkingSpeedOverride = UserDefaults.standard.double(forKey: "walkingSpeedOverride")
+        }
     }
     
     // MARK: - Waypoint management
